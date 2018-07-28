@@ -1,2 +1,0 @@
-# blueprints
-Nutanix Calm Blueprints
