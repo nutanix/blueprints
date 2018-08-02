@@ -2,6 +2,7 @@ Xendesktop :
 ==========
 XenDesktop is a desktop virtualization software that allows multiple users to access and run Microsoft Windows desktops that are installed at a centralized location separate from the devices from which they are being accessed.
 This blueprint create 6 Node Xen Cluster with 2 SQL, 2 DDC and 2 Storefront Node.
+
 Operating System :
 ------------------
  - Windows Server 2016
@@ -29,7 +30,7 @@ Version:
 Pre-requisites:
 ---------------
  - An existing Active Directory is required. or [Install Windows Active Directory](https://drive.google.com/open?id=1S0tIOPDTCZKvDWzZnZhyuphPFeGApyjLqUqQWMk2n6s)
- - Windows Server 2016 pre installed image.
+ - Windows Server 2016 pre installed and syspreped.
  - Download and Push Microsoft SQL server 2014 SP2 iso to PC images.
  - Download and Push Xen App/Desktop 17_16 to PC images.
  - Download Nutanix acropolis plugin for citrix.
@@ -40,7 +41,7 @@ Global Variables
  - DOMAIN - (Domain of the Active directory)
  - AD_IP - (Active directory IP)
  - PE_IP - (PE ip used for creating volume group & nutanix resource)
- - PE_DATA_SERVICE_IP - (optional filer url of Windows Resource Kit Tools 2003)
+ - PE_DATA_SERVICE_IP - (PE data service IP)
  - Nutanix_Container_Name - (Nutanix storage container name)
  - Volume_GroupName - (Volume group name)
  - FAILOVER_CLUSTER_NAME - (Failover cluster name)
@@ -73,8 +74,8 @@ What's inside MSSQL BPG?
   * SQLBCK      - 150GB
   * DATA01      - 300GB
   * DATA02      - 300GB
-  * TEMPDB01        - 100GB
-  * TEMPDB02        - 100GB
+  * TEMPDB01    - 100GB
+  * TEMPDB02    - 100GB
   * TEMPDBLOG01 - 200GB
   * ULOG01      - 200GB
 
