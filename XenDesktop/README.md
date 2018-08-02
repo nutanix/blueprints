@@ -28,7 +28,7 @@ Version:
 
 Pre-requisites:
 ---------------
- - An existing Active Directory is required. or Install Windows Active Directory
+ - An existing Active Directory is required. or [Install Windows Active Directory](https://drive.google.com/open?id=1S0tIOPDTCZKvDWzZnZhyuphPFeGApyjLqUqQWMk2n6s)
  - Windows Server 2016 pre installed image.
  - Download and Push Microsoft SQL server 2014 SP2 iso to PC images.
  - Download and Push Xen App/Desktop 17_16 to PC images.
@@ -57,7 +57,7 @@ Steps to Deploy:
 ----------------
  - Upload the Blueprint.
  - Select Windows 2016 image & SQL 2014 Iso for MSSQL, Select Windows 2016 image & Xen App/Desktop iso for DDC and Storefront Calm Services.
- - Set all the.
+ - Set all the required variables.
  - Fill the credentials.
     * LOCAL (Local Creds used before joining to domain)
     * DOMAIN_CRED (Domain creds used to join domain and install tasks)
@@ -86,3 +86,6 @@ What's next?
  - Create a machine catalog by selecting above created snapshot.
  - Create a delivery group using the above machine catalog.
  - For more details please take a look at below video
+ 
+ [Video Part1](https://drive.google.com/open?id=1c14tWHCV8efb5GdWhOM7Jnm0tSZ1QqPb)
+ [Video Part2](https://drive.google.com/open?id=1SzahZMeTUT84bbiWZuZYs3uVWvuBFSmn)
