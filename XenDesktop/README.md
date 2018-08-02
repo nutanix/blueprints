@@ -34,7 +34,7 @@ Pre-requisites:
  - Download and Push Microsoft SQL server 2014 SP2 iso to PC images.
  - Download and Push Xen App/Desktop 17_16 to PC images.
  - Download Nutanix acropolis plugin for citrix.
- - Setup karan in a windows VM.
+ - [Setup karan in a windows VM](https://portal.nutanix.com/#/page/docs/details?targetId=Nutanix-Calm-Admin-Operations-Guide-v10:nuc-installing-karan-service-t.html)
 
 Global Variables
 ----------------
@@ -89,5 +89,6 @@ What's next?
  - For more details please take a look at below video
  
  * [Video Part1](https://drive.google.com/open?id=1c14tWHCV8efb5GdWhOM7Jnm0tSZ1QqPb)
- 
  * [Video Part2](https://drive.google.com/open?id=1SzahZMeTUT84bbiWZuZYs3uVWvuBFSmn)
+ 
+ ## Disclaimer: This blueprint requires basic understding of Xen Desktop and administration
