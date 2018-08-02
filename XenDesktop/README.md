@@ -32,7 +32,7 @@ Pre-requisites:
  - An existing Active Directory is required. or [Install Windows Active Directory](https://drive.google.com/open?id=1S0tIOPDTCZKvDWzZnZhyuphPFeGApyjLqUqQWMk2n6s)
  - Windows Server 2016 pre installed and syspreped.
  - Download and Push Microsoft SQL server 2014 SP2 iso to PC images.
- - Download and Push Xen App/Desktop 17_16 iso to PC images.
+ - Download and Push Xen App/Desktop 7.16 iso to PC images.
  - Download Nutanix acropolis plugin for citrix.
  - [Setup karan in a windows VM](https://portal.nutanix.com/#/page/docs/details?targetId=Nutanix-Calm-Admin-Operations-Guide-v10:nuc-installing-karan-service-t.html)
 
