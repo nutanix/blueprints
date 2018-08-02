@@ -87,5 +87,6 @@ What's next?
  - Create a delivery group using the above machine catalog.
  - For more details please take a look at below video
  
- [Video Part1](https://drive.google.com/open?id=1c14tWHCV8efb5GdWhOM7Jnm0tSZ1QqPb)
- [Video Part2](https://drive.google.com/open?id=1SzahZMeTUT84bbiWZuZYs3uVWvuBFSmn)
+ * [Video Part1](https://drive.google.com/open?id=1c14tWHCV8efb5GdWhOM7Jnm0tSZ1QqPb)
+ 
+ * [Video Part2](https://drive.google.com/open?id=1SzahZMeTUT84bbiWZuZYs3uVWvuBFSmn)
