@@ -56,13 +56,13 @@ Steps to Deploy:
 What's inside MSSQL BPG?
 ------------------------
  - 8 vDisks 
-  * SQLINSTALL  - 50GB
-  * SQLBCK      - 150GB
-  * DATA01      - 300GB
-  * DATA02      - 300GB
-  * TEMPDB01    - 100GB
-  * TEMPDB02    - 100GB
-  * TEMPDBLOG01 - 200GB
-  * ULOG01      - 200GB
+    * SQLINSTALL  - 50GB
+    * SQLBCK      - 150GB
+    * DATA01      - 300GB
+    * DATA02      - 300GB
+    * TEMPDB01    - 100GB
+    * TEMPDB02    - 100GB
+    * TEMPDBLOG01 - 200GB
+    * ULOG01      - 200GB
  
  ### Note: This blueprint use older version of karan to execute script on target machine
