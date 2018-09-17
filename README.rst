@@ -1,3 +1,9 @@
+Changelog
+=========
+
+2018.09.17 - v2 of SaltStack Website uploaded.  Complete redesign of app.
+2018.09.12 - Migrated all blueprints from old "Automation" repo to https://github.com/nutanix/blueprints (this repo)
+
 Blueprints
 ==========
 
