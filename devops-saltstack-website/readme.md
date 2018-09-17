@@ -16,7 +16,7 @@ This section should be included in all Nutanix Calm blueprints committed to this
 - Tested on AHV only but should work the same way on any platform that supports CentOS Linux 7 VMs
 - Minimum # of VMs required: 4 if using default values
 - Actions: Default
-- Custom actions: ApplyDesiredState i.e. deploy git on all SaltStack Minions.  DeployLaravel i.e. deploy Laravel PHP framework.  TestPing i.e. carry out a SaltStack comms test.
+- Custom actions: ApplyDesiredState i.e. deploy git on all SaltStack Minions.  DeployLaravel i.e. deploy Laravel PHP framework.  SaltPing i.e. carry out a SaltStack comms test.
 - License information: No licenses required
 - Network information: Nutanix environment will require Internet connection for package downloads
 - Disks information: 1x SCSI disk per VM (x3 total).
@@ -33,6 +33,7 @@ This section should be included in all Nutanix Calm blueprints committed to this
 To deploy this blueprint you will need the following things available.
 
 - A CentOS 7 Linux VM image, published via the Nutanix Image Service
+- CentOS 7 image **must** have Cloud-Init package pre-installed!
 - Public and private key for your environment (see [Generating SSH Key](https://portal.nutanix.com/#/page/docs/details?targetId=Nutanix-Calm-Admin-Operations-Guide-v10:nuc-generating-private-key-t.html) in the Nutanix documentation)
 
 ## Usage
