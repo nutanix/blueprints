@@ -82,6 +82,8 @@ about blueprint validation errors, since credentials are not saved in exported b
 deploys your CentOS 7 image - Launch the blueprint - Fill in all required runtime variables, paying particular attention to the
 credentials section 
 
+## Video [here](https://drive.google.com/file/d/1318WYyZvNOh38h7Z6pJk-eAZAJAUSuL8/view?usp=sharing)
+
 ## Support
 ## 
 These blueprints are *unofficial* and are not supported or maintained by Nutanix in any way.
