@@ -92,4 +92,5 @@ through each blueprint to ensure the configuration suits your requirements.
 ## Video 
 ##
 [Click here](https://drive.google.com/file/d/1318WYyZvNOh38h7Z6pJk-eAZAJAUSuL8/view?usp=sharing)
+
 ***Changes will be required before these application blueprints can be used in production environments.***
