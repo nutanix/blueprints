@@ -8,7 +8,7 @@ The intention of this blueprint is to demonstrate the use of Calm to deploy Wind
 
 This section should be included in all Nutanix Calm blueprints committed to this repository.  For demo or sample blueprints that are not designed to be used in production or "real" environments, high-level information only is required.
 
-- Created on Prism Central 5.9.  Tested on 5.9 only but **should** work on versions from 5.7 onwards (untested!).
+- Created on Prism Central 5.9.  This blueprint will NOT work on Calm versions earlier than 5.9 due to use of the new "Delay" feature available in 5.9 onwards.
 - Minimum hardware requirements: 1x vCPU and 4GB vRAM for deployed VM.
 - Base disk image required: Windows Server 2016.  This image **must** be Sysprep'd before use!
 - Variables: AD domain name, AD credentials, Organisation name, Windows product key and computer name.
@@ -29,6 +29,7 @@ This section should be included in all Nutanix Calm blueprints committed to this
 
 To deploy this blueprint you will need the following things available.
 
+- Prism Central 5.9 or later
 - An existing, functional and accessible Microsoft Active Directory.
 - AD username and password with appropriate permissions for joining PCs to the domain
 - New username and password for the deployed VM (configured through Calm blueprint credentials)
