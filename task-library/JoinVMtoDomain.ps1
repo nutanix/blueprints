@@ -8,6 +8,7 @@
 
 if (("@@{DOMAIN}@@" == "") -and ("@@{DOMAIN_CRED.username}@@" -eq "") -and ("@@{DOMAIN_CRED.secret}@@" -eq "") -and ("@@{AD_IP}@@" -eq "")){
     Write-Output "ERROR: 'DOMAIN', 'AD_IP' and creds are mandatory."
+    exit 1
 }
 
 # -*- JointoDomain joins the VM to the domain.
@@ -35,7 +36,7 @@ function JointoDomain {
     $credential = New-Object System.Management.Automation.PSCredential($adminname,$adminpassword)
     Add-computer -DomainName $DomainName -Credential $credential -force -Options JoinWithNewName,AccountCreate -PassThru -ErrorAction Stop
   } else {
-     Write-Output "WARNING: Already in domain"
+    Write-Output "WARNING: Already in domain"
   }
 }
 
