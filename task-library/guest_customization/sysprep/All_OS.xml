@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+   <settings pass="specialize">
+      <component xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Microsoft-Windows-TCPIP" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+         <Interfaces>
+            <Interface wcm:action="add">
+               <Identifier>Ethernet</Identifier>
+               <Ipv4Settings>
+                  <DhcpEnabled>false</DhcpEnabled>
+                  <RouterDiscoveryEnabled>false</RouterDiscoveryEnabled>
+                  <Metric>10</Metric>
+               </Ipv4Settings>
+               <UnicastIpAddresses>
+                  <IpAddress wcm:action="add" wcm:keyValue="1">10.55.7.146/25</IpAddress>
+               </UnicastIpAddresses>
+               <Routes>
+                  <Route wcm:action="add">
+                     <Identifier>1</Identifier>
+                     <Metric>10</Metric>
+                     <NextHopAddress>10.55.7.129</NextHopAddress>
+                     <Prefix>0.0.0.0/0</Prefix>
+                  </Route>
+               </Routes>
+            </Interface>
+         </Interfaces>
+      </component>
+      <component name="Microsoft-Windows-DNS-Client" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <Interfaces>
+                <Interface wcm:action="add">
+                    <DNSServerSearchOrder>
+                        <IpAddress wcm:action="add" wcm:keyValue="1">10.55.7.148</IpAddress>
+                    </DNSServerSearchOrder>
+                    <DNSDomain>citrixlab.local</DNSDomain>
+                    <EnableAdapterDomainNameRegistration>true</EnableAdapterDomainNameRegistration>
+                    <Identifier>Ethernet</Identifier>
+                </Interface>
+            </Interfaces>
+        </component>
+        <component name="Microsoft-Windows-UnattendedJoin" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <Identification>
+                <Credentials>
+                    <Domain>citrixlab.local</Domain>
+                    <Username>administrator</Username>
+                    <Password>nutanix/4u</Password>
+                </Credentials>
+                <JoinDomain>citrixlab.local</JoinDomain>
+            </Identification>
+        </component>
+      <component xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+         <ComputerName>Win2016</ComputerName>
+         <RegisteredOrganization>Nutanix</RegisteredOrganization>
+         <RegisteredOwner>Acropolis</RegisteredOwner>
+         <TimeZone>EST</TimeZone>
+      </component>
+      <component xmlns="" name="Microsoft-Windows-TerminalServices-LocalSessionManager" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" processorArchitecture="amd64">
+         <fDenyTSConnections>false</fDenyTSConnections>
+      </component>
+      <component xmlns="" name="Microsoft-Windows-TerminalServices-RDP-WinStationExtensions" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" processorArchitecture="amd64">
+         <UserAuthentication>0</UserAuthentication>
+      </component>
+      <component xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Networking-MPSSVC-Svc" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+         <FirewallGroups>
+            <FirewallGroup wcm:action="add" wcm:keyValue="RemoteDesktop">
+               <Active>true</Active>
+               <Profile>all</Profile>
+               <Group>@FirewallAPI.dll,-28752</Group>
+            </FirewallGroup>
+         </FirewallGroups>
+      </component>
+   </settings>
+   <settings pass="oobeSystem">
+      <component xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+         <UserAccounts>
+            <AdministratorPassword>
+               <Value>nutanix/4u</Value>
+               <PlainText>true</PlainText>
+            </AdministratorPassword>
+         </UserAccounts>
+         <AutoLogon>
+            <Password>
+               <Value>nutanix/4u</Value>
+               <PlainText>true</PlainText>
+            </Password>
+            <Enabled>true</Enabled>
+            <Username>administrator</Username>
+         </AutoLogon>
+         <FirstLogonCommands>
+            <SynchronousCommand wcm:action="add">
+               <CommandLine>cmd.exe /c netsh firewall add portopening TCP 5985 "Port 5985"</CommandLine>
+               <Description>Win RM port open</Description>
+               <Order>1</Order>
+               <RequiresUserInput>true</RequiresUserInput>
+            </SynchronousCommand>
+			<SynchronousCommand wcm:action="add">
+               <CommandLine>powershell -Command "Enable-PSRemoting -SkipNetworkProfileCheck -Force"</CommandLine>
+               <Description>Enable PS-Remoting</Description>
+               <Order>2</Order>
+               <RequiresUserInput>true</RequiresUserInput>
+            </SynchronousCommand>
+            <SynchronousCommand wcm:action="add">
+               <CommandLine>powershell -Command "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned"</CommandLine>
+               <Description>Enable Remote-Signing</Description>
+               <Order>3</Order>
+               <RequiresUserInput>false</RequiresUserInput>
+            </SynchronousCommand>
+         </FirstLogonCommands>
+         <OOBE>
+            <HideEULAPage>true</HideEULAPage>
+            <SkipMachineOOBE>true</SkipMachineOOBE>
+         </OOBE>
+      </component>
+      <component xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+         <InputLocale>en-US</InputLocale>
+         <SystemLocale>en-US</SystemLocale>
+         <UILanguageFallback>en-us</UILanguageFallback>
+         <UILanguage>en-US</UILanguage>
+         <UserLocale>en-US</UserLocale>
+      </component>
+   </settings>
+</unattend>
