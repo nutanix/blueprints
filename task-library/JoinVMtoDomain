@@ -1,0 +1,133 @@
+###################################################################
+# Name        : JoinVMtoDomain
+# Author      : Calm Devops, Frank Skorczyk
+# Version     : 1.1
+# Description : Script is used to join windows vm to domain.
+# Compatibility : Windows Server 2012, 2012 R2, 2016, 2019, Win 10
+###################################################################
+
+if (("@@{DOMAIN}@@" -eq "") -and ("@@{DOMAIN_CRED.username}@@" -eq "") -and ("@@{DOMAIN_CRED.secret}@@" -eq "") -and ("@@{Winsrv1.address}@@" -eq "")){
+    Write-Output "ERROR: 'DOMAIN', 'Winsrv1.address' and creds are mandatory."
+    exit 1
+}
+
+$DomainName = "@@{DOMAIN}@@"
+$Username = "@@{DOMAIN_CRED.username}@@"
+$Password = "@@{DOMAIN_CRED.secret}@@"
+$Server = "@@{Winsrv1.address}@@"
+
+function PrepareNetworkAdapter{
+  [CmdletBinding()]
+  Param(
+      [parameter(Mandatory=$true)]
+      [string]$Server
+  )
+  $adapter = Get-NetAdapter | ? {$_.Status -eq "up"}
+  Write-Output $Server
+  $adapter | Set-DnsClientServerAddress -ServerAddresses $Server
+}
+
+function GetLdapConnection{
+  Param(
+    [parameter(Mandatory=$true)]
+    [string]$LdapServer,
+    [parameter(Mandatory=$true)]
+    [string]$Username,
+    [parameter(Mandatory=$true)]
+    [string]$Password
+  )
+  process {
+    Add-Type -AssemblyName System.DirectoryServices.Protocols
+    [Int32] $portNumber = 389
+    $ldapDirectoryIdentifier = New-Object -TypeName System.DirectoryServices.Protocols.LdapDirectoryIdentifier ($LdapServer, $portNumber)
+    $networkCredential = New-Object -TypeName System.Net.NetworkCredential($Username, $Password)
+    $LdapConnection = New-Object -TypeName System.DirectoryServices.Protocols.LdapConnection($ldapDirectoryIdentifier, $networkCredential)
+    return $LdapConnection
+  }
+}
+
+# -*- JointoDomain joins the VM to the domain.
+function JointoDomain {
+  [CmdletBinding()]
+  Param(
+      [parameter(Mandatory=$true)]
+      [string]$DomainName,
+      [parameter(Mandatory=$false)]
+      [string]$OU,
+      [parameter(Mandatory=$true)]
+      [string]$Username,
+      [parameter(Mandatory=$true)]
+      [string]$Password
+  )
+
+  if ($env:computername -eq $env:userdomain) {
+    Write-Output "Not in domain"
+    $dominJoinHasSucceeded = $false
+    while($dominJoinHasSucceeded -ne $true)
+    {
+    $adminname = "$DomainName\$Username"
+    Write-Output $adminname
+    $adminpassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
+    $credential = New-Object System.Management.Automation.PSCredential($adminname, $adminpassword)
+      $addComputerOutput = Add-Computer -Credential $credential -DomainName $DomainName -Force -Options AccountCreate, JoinWithNewName -PassThru -Verbose
+      $dominJoinHasSucceeded = $addComputerOutput.HasSucceeded
+      if ($dominJoinHasSucceeded -ne $true)
+      {
+        Write-Output "domain join wait"
+        sleep -Seconds 30
+      }
+    }
+  } else {
+    Write-Output "WARNING: Already in domain"
+  }
+}
+
+function LdapPing{
+  Param(
+    [parameter(Mandatory=$true)]
+    [string]$LdapServer,
+    [parameter(Mandatory=$true)]
+    [string]$Username,
+    [parameter(Mandatory=$true)]
+    [string]$Password
+  )
+  process {
+    $domainReady = $false
+    while($domainReady -ne $true)
+    {
+      $LdapConnection = GetLdapConnection -LdapServer $DomainName -Username $Username -Password $Password
+      $attributesToReturn=@{"ldapServiceName"=@()}
+      $searchRequest = New-Object -TypeName System.DirectoryServices.Protocols.SearchRequest
+      $searchRequest.Scope = "Base"
+      $searchRequest.Attributes.AddRange($attributesToReturn.Keys)
+      $extendedDNControl = New-Object -TypeName System.DirectoryServices.Protocols.ExtendedDNControl("StandardString")
+      $searchRequest.Controls.Add($extendedDNControl)
+      $searchResponse = $LdapConnection.SendRequest($searchRequest)
+      try
+      {
+        # <DNS name of the forest root domain>:<Kerberos principal name>
+        # ldapServiceName: testroot.dir:tabwodc01$@TESTOFFICE.DIR
+        $ldapServiceName = ($searchResponse.Entries[0].Attributes["ldapServiceName"].GetValues([string]))[0];
+        $ldapDomainName = ($ldapServiceName.Substring($ldapServiceName.IndexOf("@") + 1)).ToLower()
+        Write-Output $ldapDomainName
+        if ($ldapDomainName -match $DomainName.ToLower())
+        {
+          $domainReady = $true
+          Write-Output "domain is ready."
+        }
+      }
+      catch
+      {
+        Write-Output "ldap ping wait"
+        sleep -Seconds 30
+      }
+    }
+  }
+}
+
+PrepareNetworkAdapter -Server $Server
+LdapPing -LdapServer $DomainName -Username $Username -Password $Password
+JointoDomain -DomainName $DomainName -Username $Username -Password $Password
+
+Restart-Computer -Force
+exit 0
