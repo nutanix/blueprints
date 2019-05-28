@@ -38,7 +38,7 @@ pip install requests configparser
 ```
 
 ## Generate config.ini
-* Create config.ini file with git and calm configuration details in the same directory as the script.
+* Create config.ini file with git and calm endpoint details in the same directory as the script.
 
 ```
 [calm]
