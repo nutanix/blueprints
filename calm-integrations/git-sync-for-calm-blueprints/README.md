@@ -5,8 +5,8 @@ This scripts connects to your Nutanix Calm instance, iterates over the given lis
 We recommend running this script as a cron job on an hourly/daily cadence to ensure all changes being made to your blueprints are regularly backed up.
 
 ### To Dos:
-Backup task library
-Script to upload blueprints/task library items automatically into a blank calm instance
+* Backup task library
+* Script to upload blueprints/task library items automatically into a blank calm instance
 
 ### Source Files
 [git-version-management.py](https://raw.githubusercontent.com/nutanix/blueprints/master/calm-integrations/git-sync-for-calm-blueprints/git-sync-for-calm-blueprints.py) script helps to upload blueprints to github repo.
