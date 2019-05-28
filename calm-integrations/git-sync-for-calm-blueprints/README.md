@@ -9,8 +9,9 @@ Backup task library
 Script to upload blueprints/task library items automatically into a blank calm instance
 
 ### Source Files
-[git-version-management.py]() script helps to upload blueprints to github repo.
-[config.ini]() sample config file.
+[git-version-management.py](https://raw.githubusercontent.com/nutanix/blueprints/master/calm-integrations/git-sync-for-calm-blueprints/git-sync-for-calm-blueprints.py) script helps to upload blueprints to github repo.
+
+[config.ini](https://raw.githubusercontent.com/nutanix/blueprints/master/calm-integrations/git-sync-for-calm-blueprints/config.ini) sample config file.
 
 ## Pre-Requisites
 * Existing github account.
