@@ -1,0 +1,1 @@
+Place scripts here which use the Rubrik API (https://rubrikinc.github.io/api-doc-internal-5.0/#section/Introduction).
