@@ -1,0 +1,1 @@
+Place here scripts which use the Calm API (https://calm-apr12.docs.stoplight.io/).
