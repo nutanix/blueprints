@@ -1,24 +1,25 @@
 # region headers
-# escript-template v20190605 / stephane.bourdeaud@nutanix.com
-# * author:     stephane.bourdeaud@nutanix.com, lukasz@nutanix.com
-# * version:    20190606
-# task_name:    PeAddVmToPd
-# description:  Adds the virtual machine provisioned by Calm to the specified
-#             protection domain.
+# escript-template v20190611 / stephane.bourdeaud@nutanix.com
+# * author:     stephane.bourdeaud@nutanix.com
+# * version:    2019/06/26, v1.0
+# task_name:    PeSnapVm
+# description:  Takes a snapshot of the virtual machine (AHV). Precede with
+#               PcGetVmUuid.py to grab the virtual machine uuid and with
+#               PcGetClusterIp.py to get the Prism Element cluster IP.
 # endregion
 
 # region capture Calm variables
+# * Capture variables here. This makes sure Calm macros are not referenced
+# * anywhere else in order to improve maintainability.
 username = '@@{pe.username}@@'
 username_secret = "@@{pe.secret}@@"
-nutanix_cluster_ip = "@@{nutanix_cluster_ip}@@"
+api_server = "@@{nutanix_cluster_ip}@@"
 vm_uuid = "@@{vm_uuid}@@"
-protection_domain_name = "@@{protection_domain_name}@@"
 # endregion
 
-# region Add VM to Protection Domain
-api_server = nutanix_cluster_ip
+# region prepare api call
 api_server_port = "9440"
-api_server_endpoint = "/PrismGateway/services/rest/v2.0/protection_domains/{}/protect_vms".format(protection_domain_name)
+api_server_endpoint = "/PrismGateway/services/rest/v2.0/snapshots"
 url = "https://{}:{}{}".format(
     api_server,
     api_server_port,
@@ -29,12 +30,20 @@ headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
 }
+
+# Compose the json payload
 payload = {
-  "uuids": [
-    vm_uuid
+    "snapshot_specs": [
+    {
+      "snapshot_name": "PeSnapVm",
+      "vm_uuid": vm_uuid
+    }
   ]
 }
+# endregion
 
+# region make api call
+# make the API call and capture the results in the variable called "resp"
 print("Making a {} API call to {}".format(method, url))
 resp = urlreq(
     url,
@@ -47,6 +56,7 @@ resp = urlreq(
     verify=False
 )
 
+# deal with the result/response
 if resp.ok:
     print("Request was successful")
     print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
