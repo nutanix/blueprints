@@ -10,7 +10,7 @@
 username = "@@{pc.username}@@"
 username_secret = "@@{pc.secret}@@"
 api_server = "@@{pc_ip}@@"
-vm_name = "@@{vm_name}@@"
+vm_name = "@@{platform.spec.name}@@"
 # endregion
 
 # region prepare api call
