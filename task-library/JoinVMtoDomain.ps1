@@ -6,7 +6,7 @@
 # Compatibility : Windows Serever 2012, 2012 R2, 2016, Win 10
 #############################################################
 
-if (("@@{DOMAIN}@@" == "") -and ("@@{DOMAIN_CRED.username}@@" -eq "") -and ("@@{DOMAIN_CRED.secret}@@" -eq "") -and ("@@{AD_IP}@@" -eq "")){
+if (("@@{DOMAIN}@@" -eq "") -and ("@@{DOMAIN_CRED.username}@@" -eq "") -and ("@@{DOMAIN_CRED.secret}@@" -eq "") -and ("@@{AD_IP}@@" -eq "")){
     Write-Output "ERROR: 'DOMAIN', 'AD_IP' and creds are mandatory."
     exit 1
 }
