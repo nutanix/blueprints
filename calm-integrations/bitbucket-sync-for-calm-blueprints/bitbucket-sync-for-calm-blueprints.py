@@ -133,7 +133,7 @@ def git_update(blueprint_names,account_data,pc_data):
         blueprint_json = get_content_calm(bp["uuid"], pc_data)
         git_file_hash = hashlib.sha1(git_file_data).hexdigest()
         bp_file_hash = hashlib.sha1(blueprint_json).hexdigest()
-        if git_file_resp_code != 200 and git_file_meta == "":
+        if git_file_resp_code != 200 and git_file_data == "":
             resp_code, resp_data = create_blueprint(bp["name"], project, blueprint_json, account_data)
             print "Creating Bp {} with status code : {} & message '{}'.".format(bp["name"], resp_code, resp_data)
             if resp_code != 201:
@@ -150,24 +150,24 @@ def get_help():
     username = <pc_username>
     password = <pc_password>
     project_list = <project1,project2>
-    [git]
-    owner = <git_owner>
-    repository = <git_repository>
-    username = <git_username>
-    password = <git_password>
+    [bitbucket]
+    owner = <bitbucket_owner>
+    repository = <bitbucket_repository>
+    username = <bitbucket_username>
+    password = <bitbucket_password>
     """
 
 if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read('config.ini')
-    if 'calm' not in config or 'git' not in config: 
-        print "Failed to parse calm/git config in 'config.ini'"
+    if 'calm' not in config or 'bitbucket' not in config:
+        print "Failed to parse calm/bitbucket config in 'config.ini'"
         sys.exit(1)
     try:
-        account_data["repository"] = config["git"]["repository"]
-        account_data["owner"] = config["git"]["owner"]
-        account_data["username"] = config["git"]["username"]
-        account_data["password"] = config["git"]["password"]
+        account_data["repository"] = config["bitbucket"]["repository"]
+        account_data["owner"] = config["bitbucket"]["owner"]
+        account_data["username"] = config["bitbucket"]["username"]
+        account_data["password"] = config["bitbucket"]["password"]
     except KeyError:
         print "Missing bitbucket config 'repository', 'owner', 'username' & 'password'."
         get_help()
