@@ -1,10 +1,3 @@
-Changelog
-=========
-
-- 2018.09.17: Complete resdesign of both Ansible and SaltStack blueprints
-- 2018.09.17: v2 of SaltStack Website uploaded.  Complete redesign of app.
-- 2018.09.12: Migrated all blueprints from old "Automation" repo to https://github.com/nutanix/blueprints (this repo)
-
 Blueprints
 ==========
 
@@ -24,3 +17,10 @@ Please following the instructions below to push to this repo:
       * License information.
       * Network information.
       * Disks information.
+
+Changelog
+=========
+
+- 2018.09.17: Complete resdesign of both Ansible and SaltStack blueprints
+- 2018.09.17: v2 of SaltStack Website uploaded.  Complete redesign of app.
+- 2018.09.12: Migrated all blueprints from old "Automation" repo to https://github.com/nutanix/blueprints (this repo)
