@@ -1,7 +1,7 @@
 # region headers
 # escript-template v20190605 / stephane.bourdeaud@nutanix.com
 # * author:     stephane.bourdeaud@nutanix.com, lukasz@nutanix.com
-# * version:    20190606
+# * version:    20190924
 # task_name:    PcVmsListPost
 # description:  Gets the list of VMs from Prism Central.
 # endregion
@@ -38,7 +38,7 @@ payload = {
 }
 # endregion
 
-# region make api call
+# region make api call and process the results
 # make the API call and capture the results in the variable called "resp"
 # because the response could have multiple pages (by default, only 20 results
 # are returned by the API, unless you specify a length in the json payload), we
