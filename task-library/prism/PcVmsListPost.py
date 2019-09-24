@@ -24,6 +24,7 @@ url = "https://{}:{}{}".format(
     api_server_endpoint
 )
 method = "POST"
+length = 50
 headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
@@ -32,64 +33,51 @@ headers = {
 # Compose the json payload
 payload = {
     "kind": "vm",
-    "offset": 0
+    "offset": 0,
+    "length": length
 }
 # endregion
 
 # region make api call
 # make the API call and capture the results in the variable called "resp"
-print("Making a {} API call to {}".format(method, url))
-# ! Get rid of verify=False if you're using proper certificates
-resp = urlreq(
-    url,
-    verb=method,
-    auth='BASIC',
-    user=username,
-    passwd=username_secret,
-    params=json.dumps(payload),
-    headers=headers,
-    verify=False
-)
+# because the response could have multiple pages (by default, only 20 results
+# are returned by the API, unless you specify a length in the json payload), we
+# will loop until there are no more results
+while True:
+    print("Making a {} API call to {}".format(method, url))
+    # ! Get rid of verify=False if you're using proper certificates
+    resp = urlreq(
+        url,
+        verb=method,
+        auth='BASIC',
+        user=username,
+        passwd=username_secret,
+        params=json.dumps(payload),
+        headers=headers,
+        verify=False
+    )
 
-# deal with the result/response
-if resp.ok:
-    json_resp = json.loads(resp.content)
-    print("Printing results from {} to {}".format(json_resp['metadata']['offset'], json_resp['metadata']['length']))
-    print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-    while json_resp['metadata']['length'] is 20:
-        payload = {
-            "kind": "vm",
-            "offset": json_resp['metadata']['length'] + json_resp['metadata']['offset'] + 1
-        }
-        resp = urlreq(
-            url,
-            verb=method,
-            auth='BASIC',
-            user=username,
-            passwd=username_secret,
-            params=json.dumps(payload),
-            headers=headers,
-            verify=False
-        )
-        if resp.ok:
-            json_resp = json.loads(resp.content)
-            print("Printing results from {} to {}".format(json_resp['metadata']['offset'], json_resp['metadata']['offset'] + json_resp['metadata']['length']))
-            print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
+    # deal with the result/response
+    if resp.ok:
+        json_resp = json.loads(resp.content)
+        print("Processing results from {} to {} out of {}".format(json_resp['metadata']['offset'], json_resp['metadata']['length']+json_resp['metadata']['offset'], json_resp['metadata']['total_matches']))
+        #* add your own processing here
+        #print("Offset is: {}, Length is: {}".format(json_resp['metadata']['offset'],json_resp['metadata']['length']))
+        #print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
+        if json_resp['metadata']['length'] == length:
+            payload = {
+                "kind": "vm",
+                "offset": json_resp['metadata']['length'] + json_resp['metadata']['offset'] + 1,
+                "length": length
+            }
         else:
-            print("Request failed")
-            print("Headers: {}".format(headers))
-            print("Payload: {}".format(json.dumps(payload)))
-            print('Status code: {}'.format(resp.status_code))
-            print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-            exit(1)
-    exit(0)
-else:
-    # print the content of the response (which should have the error message)
-    print("Request failed", json.dumps(
-        json.loads(resp.content),
-        indent=4
-    ))
-    print("Headers: {}".format(headers))
-    print("Payload: {}".format(payload))
-    exit(1)
+            break
+    else:
+        # print the content of the response (which should have the error message)
+        print("Request failed")
+        print("Headers: {}".format(headers))
+        print("Payload: {}".format(json.dumps(payload)))
+        print('Status code: {}'.format(resp.status_code))
+        print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
+        exit(1)
 # endregion
