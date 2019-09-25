@@ -54,8 +54,7 @@ def make_prism_api_call_v3(url,method,username,username_secret,payload,length):
                 json_resp['metadata']['offset'], 
                 json_resp['metadata']['length']+json_resp['metadata']['offset'],
                 json_resp['metadata']['total_matches']))
-            for entity in json_resp['entities']:
-                entities.append(entity)
+            entities.extend(json_resp['entities'])
             if json_resp['metadata']['length'] == length:
                 payload = {
                     "kind": "vm",
