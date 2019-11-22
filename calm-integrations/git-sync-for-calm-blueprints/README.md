@@ -4,6 +4,8 @@
 This scripts connects to your Nutanix Calm instance, iterates over the given list of projects, and for every project, looks at all blueprints in that project. If the blueprint is new, it uploads to git. If the blueprint is already present in git, it checks to see if the blueprint has changed/been updated. If changed, it uploads the new blueprint to git, else skip.
 We recommend running this script as a cron job on an hourly/daily cadence to ensure all changes being made to your blueprints are regularly backed up.
 
+Here is the demo video for how to sync calm blueprints to the git : [Git Sync Calm Blueprints](https://www.loom.com/share/0402693c4b114e48b4b979ee0a252e5c)
+
 ### To Dos:
 * Backup task library
 * Script to upload blueprints/task library items automatically into a blank calm instance
