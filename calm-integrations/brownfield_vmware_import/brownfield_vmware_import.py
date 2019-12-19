@@ -102,7 +102,7 @@ def esxi_single_vm_run(spec):
     base_url = "https://{}:9440/api/nutanix/v3".format(pc_ip)
 
     vm_ip = "@@{vm_ip}@@"
-    host_ip = "10.46.33.230"
+    host_ip = "@@{host_ip}@@"
     bp_name = "app-{}".format(vm_ip.replace(".", "-"))
     project_name = "@@{project_name}@@"
     account_name = "@@{account_name}@@"
@@ -338,10 +338,15 @@ def esxi_single_vm_run(spec):
                             "platform_data": {}
                         }
                         datastore = vm['status']['resources']['datastore']
+                        hardware_resources = {
+                            "numCPU": vm['status']['resources']['config.hardware.numCPU'],
+                            "numCoresPerSocket": vm['status']['resources']['config.hardware.numCoresPerSocket'],
+                            "memorySizeMB" : vm['status']['resources']['summary.config.memorySizeMB']
+                        }
                         brownfield_instance_list.append(vm_info)
 
                 if brownfield_instance_list:
-                    return brownfield_instance_list, datastore
+                    return brownfield_instance_list, hardware_resources, datastore
                 else:
                     print("Could not find brownfield vms.")
                     exit(1)
@@ -425,7 +430,7 @@ def esxi_single_vm_run(spec):
     datastore_dict = get_host_datastore(base_url, auth, account_uuid, host_uuid)
 
     ### Get brownfield vms dict
-    brownfield_instance_list, datastore = get_brownfield_vms_list(base_url, auth, project_uuid, account_uuid, vm_ip)
+    brownfield_instance_list, hardware_resources, datastore = get_brownfield_vms_list(base_url, auth, project_uuid, account_uuid, vm_ip)
     vm_name = brownfield_instance_list[0]["instance_name"][0:25]
 
     datastore_location = ""
@@ -443,6 +448,9 @@ def esxi_single_vm_run(spec):
     substrate["create_spec"]["host"] = host_uuid
     substrate["create_spec"]["datastore"] = datastore_location
     substrate["create_spec"]["resources"]["account_uuid"] = account_uuid
+    substrate["create_spec"]["resources"]["num_vcpus_per_socket"] = hardware_resources["numCoresPerSocket"]
+    substrate["create_spec"]["resources"]["num_sockets"] = hardware_resources["numCPU"]
+    substrate["create_spec"]["resources"]["memory_size_mib"] = hardware_resources["memorySizeMB"]
 
     updated_spec["spec"]["resources"]["substrate_definition_list"][0] = substrate
     updated_spec["spec"]["name"] = bp_name
