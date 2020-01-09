@@ -5,6 +5,7 @@ auth = { "username": 'admin', "password": 'Nutanix.123'}
 esxi_host_ip = "10.46.33.228"
 project_name = "sample"
 account_name = "vmware_regression"
+parallel_process = 5
 # Workaround: Any Linux and Windows template uuid #fixed in 2.9.7.1
 linux_template_uuid = "50204284-5a62-9f9f-16c1-de61da074ee7"
 windows_template_uuid = "5020b0fe-19fa-bbfe-0d94-844a9a4145d2"
@@ -560,7 +561,6 @@ finally:
 
 total_matches = len(vms_ip)
 count = 0
-parallel_process = 5
 
 while (count < total_matches):
     apps_ids = {}
