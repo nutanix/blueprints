@@ -1,3 +1,14 @@
+import sys, requests, json, re, uuid, time
+
+pc_ip = '10.46.4.2'
+auth = { "username": 'admin', "password": 'Nutanix.123'}
+esxi_host_ip = "10.46.33.228"
+project_name = "sample"
+account_name = "vmware_regression"
+# Workaround: Any Linux and Windows template uuid #fixed in 2.9.7.1
+linux_template_uuid = "50204284-5a62-9f9f-16c1-de61da074ee7"
+windows_template_uuid = "5020b0fe-19fa-bbfe-0d94-844a9a4145d2"
+base_url = "https://{}:9440/api/nutanix/v3".format(pc_ip)
 
 BP_SPEC = {
     "api_version": "3.0",
@@ -29,7 +40,6 @@ BP_SPEC = {
                 "guest_customization": {
                   "customization_type": "GUEST_OS_LINUX"
                 },
-                
                 "account_uuid": "",
                 "num_vcpus_per_socket": 0,
                 "num_sockets": 0,
@@ -95,17 +105,38 @@ BP_SPEC = {
     }
 }
 
-def esxi_single_vm_run(spec):
+def get_single_vm_app_status(base_url, auth, application_uuid):
+    method = 'GET'
+    url = base_url + "/apps/{}".format(application_uuid)
+    #print("Making a {} API call to {}".format(method, url))
+    headers = {'content-type': 'application/json', 'Accept': 'application/json'}
+    status = ""
+    while True:
+        resp = requests.request(
+            method,
+            url,
+            headers=headers,
+            auth=(auth["username"], auth["password"]),
+            verify=False
+        )
 
-    pc_ip = '@@{pc_ip}@@'
-    auth = { "username": '@@{pc_cred.username}@@', "password": '@@{pc_cred.secret}@@'}
-    base_url = "https://{}:9440/api/nutanix/v3".format(pc_ip)
+        if resp.ok:
+            json_resp = resp.json()
+            status = json_resp["status"]["state"]
+            return status
+            #print("Received application status")
+        else:
+            print("Request failed")
+            print("Headers: {}".format(headers))
+            print('Status code: {}'.format(resp.status_code))
+            print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
+            sys.exit(1)
 
-    vm_ip = "@@{vm_ip}@@"
-    host_ip = "@@{host_ip}@@"
+### --------------------------------------------------------------------------------- ###
+
+def esxi_brownfield_import(spec, vm_ip):
+    vm_ip = vm_ip
     bp_name = "app-{}".format(vm_ip.replace(".", "-"))
-    project_name = "@@{project_name}@@"
-    account_name = "@@{account_name}@@"
 
     headers = {'content-type': 'application/json', 'Accept': 'application/json'}
 
@@ -118,7 +149,7 @@ def esxi_single_vm_run(spec):
             context (dict) : context to recursively change uuid references
         """
         if isinstance(bp, dict):
-            for key, val in bp.iteritems():
+            for key, val in bp.items():
                 if key == 'uuid':
                     old_uuid = val
                     if old_uuid in context:
@@ -158,32 +189,32 @@ def esxi_single_vm_run(spec):
             "offset":0,
             "filter":"name=={0}".format(project_name)
         }
-        print("Making a {} API call to {}".format(method, url))
-        resp = urlreq(
+        #print("Making a {} API call to {}".format(method, url))
+        resp = requests.request(
+            method,
             url,
-            verb=method,
-            params=json.dumps(payload),
+            data=json.dumps(payload),
             headers=headers,
-            auth='BASIC',
-            user=auth["username"],
-            passwd=auth["password"],
+            auth=(auth["username"], auth["password"]),
             verify=False
         )
 
         if resp.ok:
-            json_resp = json.loads(resp.content)
+            json_resp = resp.json()
             if json_resp['metadata']['total_matches'] > 0:
                 project = json_resp['entities'][0]
-                return project["metadata"]["uuid"]
+                project_uuid = project["metadata"]["uuid"]
+                return project_uuid
             else:
                 print("Could not find project")
-                exit(1)
+                sys.exit(1)
         else:
             print("Request failed")
             print("Headers: {}".format(headers))
             print('Status code: {}'.format(resp.status_code))
             print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-            exit(1)
+            sys.exit(1)
+
     ### --------------------------------------------------------------------------------- ###
 
     ### --------------------------------------------------------------------------------- ###
@@ -195,20 +226,18 @@ def esxi_single_vm_run(spec):
             "offset":0,
             "filter":"name=={0};type==vmware".format(account_name)
         }
-        print("Making a {} API call to {}".format(method, url))
-        resp = urlreq(
+        #print("Making a {} API call to {}".format(method, url))
+        resp = requests.request(
+            method,
             url,
-            verb=method,
-            params=json.dumps(payload),
+            data=json.dumps(payload),
             headers=headers,
-            auth='BASIC',
-            user=auth["username"],
-            passwd=auth["password"],
+            auth=(auth["username"], auth["password"]),
             verify=False
         )
 
         if resp.ok:
-            json_resp = json.loads(resp.content)
+            json_resp = resp.json()
             if json_resp['metadata']['total_matches'] > 0:
                 account = json_resp['entities'][0]
                 return account["metadata"]["uuid"]
@@ -221,6 +250,7 @@ def esxi_single_vm_run(spec):
             print('Status code: {}'.format(resp.status_code))
             print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
             exit(1)
+    ### --------------------------------------------------------------------------------- ###
 
     ### --------------------------------------------------------------------------------- ###
     def get_hosts(base_url, auth, account_uuid):
@@ -231,27 +261,23 @@ def esxi_single_vm_run(spec):
             "offset":0,
             "filter":"account_uuid=={0}".format(account_uuid)
         }
-        print("Making a {} API call to {}".format(method, url))
-        resp = urlreq(
+        #print("Making a {} API call to {}".format(method, url))
+        resp = requests.request(
+            method,
             url,
-            verb=method,
-            params=json.dumps(payload),
+            data=json.dumps(payload),
             headers=headers,
-            auth='BASIC',
-            user=auth["username"],
-            passwd=auth["password"],
+            auth=(auth["username"], auth["password"]),
             verify=False
         )
 
         if resp.ok:
-            json_resp = json.loads(resp.content)
+            json_resp = resp.json()
             host_dict = {}
             if len(json_resp['entities']) > 0:
                 for host in json_resp['entities']:
                     ip = host['status']['resources']["name"]
                     host_dict[ip] = host['status']['resources']['summary']['hardware']['uuid']
-                    #id = host['status']['resources']['summary']['hardware']['uuid']
-                    #host_dict[id] = host['status']['resources']["name"]
                 return host_dict
             else:
                 print("No host found")
@@ -260,7 +286,7 @@ def esxi_single_vm_run(spec):
             print("Headers: {}".format(headers))
             print('Status code: {}'.format(resp.status_code))
             print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-            exit(1)
+            sys.exit(1)
     ### --------------------------------------------------------------------------------- ###
 
     ### --------------------------------------------------------------------------------- ###
@@ -272,20 +298,18 @@ def esxi_single_vm_run(spec):
             "offset":0,
             "filter":"account_uuid=={0};host_id=={1}".format(account_uuid, host_id)
         }
-        print("Making a {} API call to {}".format(method, url))
-        resp = urlreq(
+        #print("Making a {} API call to {}".format(method, url))
+        resp = requests.request(
+            method,
             url,
-            verb=method,
-            params=json.dumps(payload),
+            data=json.dumps(payload),
             headers=headers,
-            auth='BASIC',
-            user=auth["username"],
-            passwd=auth["password"],
+            auth=(auth["username"], auth["password"]),
             verify=False
         )
 
         if resp.ok:
-            json_resp = json.loads(resp.content)
+            json_resp = resp.json()
             datastore_dict = {}
             if len(json_resp['entities']) > 0:
                 for datastore in json_resp['entities']:
@@ -298,7 +322,7 @@ def esxi_single_vm_run(spec):
             print("Headers: {}".format(headers))
             print('Status code: {}'.format(resp.status_code))
             print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-            exit(1)
+            sys.exit(1)
     ### --------------------------------------------------------------------------------- ###
 
     ### --------------------------------------------------------------------------------- ###
@@ -308,29 +332,26 @@ def esxi_single_vm_run(spec):
         payload = {
             "length":100,
             "offset":0,
-            "filter":"guest.ipAddress=={0};project_uuid=={1};account_uuid=={2}".format(vm_ip, project_uuid, account_uuid)
+            "filter":"instance_name=={0};project_uuid=={1};account_uuid=={2}".format(vm_ip, project_uuid, account_uuid)
         }
-        print("Making a {} API call to {}".format(method, url))
-        resp = urlreq(
+        #print("Making a {} API call to {}".format(method, url))
+        resp = requests.request(
+            method,
             url,
-            verb=method,
-            params=json.dumps(payload),
+            data=json.dumps(payload),
             headers=headers,
-            auth='BASIC',
-            user=auth["username"],
-            passwd=auth["password"],
+            auth=(auth["username"], auth["password"]),
             verify=False
         )
         ### It assumes that vm['status']['resources']['address'] will be list having only one ip.
         if resp.ok:
-            json_resp = json.loads(resp.content)
+            json_resp = resp.json()
             brownfield_instance_list = []
-            vm_host = ""
+            hardware_resources = {}
             datastore = ""
             if json_resp['metadata']['total_matches'] > 0:
                 for vm in json_resp['entities']:
-                    print("IP: ", vm['status']['resources']['guest.ipAddress'])
-                    if len(set(vm['status']['resources']['guest.ipAddress']) & set([vm_ip])) > 0:
+                    if vm["status"]["resources"]["instance_name"] == vm_ip:
                         vm_info = {
                             "instance_name": vm['status']['resources']['instance_name'],
                             "instance_id": vm['status']['resources']['instance_id'],
@@ -339,9 +360,10 @@ def esxi_single_vm_run(spec):
                         }
                         datastore = vm['status']['resources']['datastore']
                         hardware_resources = {
-                            "numCPU": vm['status']['resources']['config.hardware.numCPU'],
-                            "numCoresPerSocket": vm['status']['resources']['config.hardware.numCoresPerSocket'],
-                            "memorySizeMB" : vm['status']['resources']['summary.config.memorySizeMB']
+                            "num_sockets": vm['status']['resources']['config.hardware.numCPU'],
+                            "num_vcpus_per_socket": vm['status']['resources']['config.hardware.numCoresPerSocket'],
+                            "memory_size_mib" : vm['status']['resources']['summary.config.memorySizeMB'],
+                            "guest": vm['status']['resources']['guest.guestFamily']
                         }
                         brownfield_instance_list.append(vm_info)
 
@@ -349,89 +371,134 @@ def esxi_single_vm_run(spec):
                     return brownfield_instance_list, hardware_resources, datastore
                 else:
                     print("Could not find brownfield vms.")
-                    exit(1)
+                    return brownfield_instance_list, hardware_resources, datastore
             else:
                 print("Could not find brownfield vms.")
-                exit(1)
+                return brownfield_instance_list, hardware_resources, datastore
         else:
             print("Request failed")
             print("Headers: {}".format(headers))
             print('Status code: {}'.format(resp.status_code))
             print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-            exit(1)
+            sys.exit(1)
     ### --------------------------------------------------------------------------------- ###
 
     ### --------------------------------------------------------------------------------- ###
     def create_single_vm_bp(base_url, auth, payload):
         method = 'POST'
         url = base_url + "/blueprints"
-        print("Making a {} API call to {}".format(method, url))
-        resp = urlreq(
+        #print("Making a {} API call to {}".format(method, url))
+        resp = requests.request(
+            method,
             url,
-            verb=method,
-            params=json.dumps(payload),
+            data=json.dumps(payload),
             headers=headers,
-            auth='BASIC',
-            user=auth["username"],
-            passwd=auth["password"],
+            auth=(auth["username"], auth["password"]),
             verify=False
         )
 
         if resp.ok:
-            json_resp = json.loads(resp.content)
+            json_resp = resp.json()
             if json_resp["status"]["state"] != "ACTIVE":
                 print("Blueprint state is not Active. It is : {}".format(json_resp["status"]["state"]))
                 print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-                exit(1)
+                sys.exit(1)
             return json_resp
         else:
             print("Request failed")
             print("Headers: {}".format(headers))
             print('Status code: {}'.format(resp.status_code))
             print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-            exit(1)
+            sys.exit(1)
     ### --------------------------------------------------------------------------------- ###
 
     ### --------------------------------------------------------------------------------- ###
     def launch_single_vm_bp(base_url, auth, blueprint_uuid, payload):
         method = 'POST'
         url = base_url + "/blueprints/{}/launch".format(blueprint_uuid)
-        print("Making a {} API call to {}".format(method, url))
-        resp = urlreq(
+        #print("Making a {} API call to {}".format(method, url))
+        launch_request_uuid = ""
+        resp = requests.request(
+            method,
             url,
-            verb=method,
-            params=json.dumps(payload),
+            data=json.dumps(payload),
             headers=headers,
-            auth='BASIC',
-            user=auth["username"],
-            passwd=auth["password"],
+            auth=(auth["username"], auth["password"]),
             verify=False
         )
 
         if resp.ok:
-            json_resp = json.loads(resp.content)
+            json_resp = resp.json()
+            launch_request_uuid = json_resp["status"]["request_id"]
+            return launch_request_uuid
             print("Single VM Blueprint launched successfully")
         else:
             print("Request failed")
             print("Headers: {}".format(headers))
             print('Status code: {}'.format(resp.status_code))
             print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-            exit(1)
+            sys.exit(1)
+
+        method = GET
+        url = base_url + "/blueprints/{}/pending_launches/{}".format(blueprint_uuid,launch_request_uuid)
+        resp = requests.request(
+            method,
+            url,
+            data=json.dumps(payload),
+            headers=headers,
+            auth=(auth["username"], auth["password"]),
+            verify=False
+        )
     ### --------------------------------------------------------------------------------- ###
 
+    def get_single_vm_app_uuid(base_url, auth, launch_request_uuid):
+        method = 'GET'
+        url = base_url + "/blueprints/{}/pending_launches/{}".format(blueprint_uuid,launch_request_uuid)
+        #print("Making a {} API call to {}".format(method, url))
+        application_uuid = ""
+        while True:
+            resp = requests.request(
+                method,
+                url,
+                headers=headers,
+                auth=(auth["username"], auth["password"]),
+                verify=False
+            )
+
+            if resp.ok:
+                json_resp = resp.json()
+                if json_resp["status"]["state"] == "failure":
+                    return application_uuid
+                if json_resp["status"]["state"] == "success":
+                    application_uuid = json_resp["status"]["application_uuid"]
+                    return application_uuid
+                #print("Received application uuid")
+            else:
+                print("Request failed")
+                print("Headers: {}".format(headers))
+                print('Status code: {}'.format(resp.status_code))
+                print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
+                sys.exit(1)
+
+    ### --------------------------------------------------------------------------------- ###
     ### Get project and account uuid
     project_uuid = get_project_uuid(base_url, auth, project_name)
     account_uuid = get_vmware_account_uuid(base_url, auth, account_name)
+    application_uuid = ""
 
     ### Get host dict
     host_dict = get_hosts(base_url, auth, account_uuid)
-    host_uuid = host_dict[host_ip]
-    
+    if esxi_host_ip not in host_dict.keys():
+        print("Esxi Host '{}' not found.".format(esxi_host_ip))
+        sys.exit(1)
+    host_uuid = host_dict[esxi_host_ip]
     datastore_dict = get_host_datastore(base_url, auth, account_uuid, host_uuid)
 
     ### Get brownfield vms dict
     brownfield_instance_list, hardware_resources, datastore = get_brownfield_vms_list(base_url, auth, project_uuid, account_uuid, vm_ip)
-    vm_name = brownfield_instance_list[0]["instance_name"][0:25]
+    if len(brownfield_instance_list) == 0:
+        return ""
+    vm_name = brownfield_instance_list[0]["instance_name"]  #[0:25]
 
     datastore_location = ""
     for ds in datastore_dict:
@@ -443,17 +510,21 @@ def esxi_single_vm_run(spec):
     updated_spec = change_uuids(spec, {})
     updated_spec["metadata"]["project_reference"]["uuid"] = project_uuid
     substrate = updated_spec["spec"]["resources"]["substrate_definition_list"][0]
-
+    if hardware_resources["guest"] == "linuxGuest":
+        template_uuid = linux_template_uuid
+    else:
+        template_uuid = windows_template_uuid
     substrate["create_spec"]["name"] = vm_name
     substrate["create_spec"]["host"] = host_uuid
+    substrate["create_spec"]["template"] = template_uuid
     substrate["create_spec"]["datastore"] = datastore_location
     substrate["create_spec"]["resources"]["account_uuid"] = account_uuid
-    substrate["create_spec"]["resources"]["num_vcpus_per_socket"] = hardware_resources["numCoresPerSocket"]
-    substrate["create_spec"]["resources"]["num_sockets"] = hardware_resources["numCPU"]
-    substrate["create_spec"]["resources"]["memory_size_mib"] = hardware_resources["memorySizeMB"]
+    substrate["create_spec"]["resources"]["num_vcpus_per_socket"] = hardware_resources["num_vcpus_per_socket"]
+    substrate["create_spec"]["resources"]["num_sockets"] = hardware_resources["num_sockets"]
+    substrate["create_spec"]["resources"]["memory_size_mib"] = hardware_resources["memory_size_mib"]
 
     updated_spec["spec"]["resources"]["substrate_definition_list"][0] = substrate
-    updated_spec["spec"]["name"] = bp_name
+    updated_spec["spec"]["name"] = vm_name
     brownfield_instance_list[0]["instance_name"] = vm_name
     updated_spec["spec"]["resources"]["app_profile_list"][0]["deployment_create_list"][0]["brownfield_instance_list"] = brownfield_instance_list
 
@@ -474,7 +545,57 @@ def esxi_single_vm_run(spec):
     del resp["spec"]["name"]
 
     ### Launch a single vm bp
-    launch_single_vm_bp(base_url, auth, blueprint_uuid, resp)
+    launch_request_uuid = launch_single_vm_bp(base_url, auth, blueprint_uuid, resp)
+    application_uuid = get_single_vm_app_uuid(base_url, auth, launch_request_uuid)
+    return application_uuid
 
+vms_ip = []
+try:
+    vm_names = open("vms_list", "r")
+except IOError:
+    print("ERROR: 'vms_list' File not found.")
+    sys.exit(1)
+finally:
+    vms_ip = vm_names.read().splitlines()
 
-esxi_single_vm_run(BP_SPEC)
+total_matches = len(vms_ip)
+count = 0
+parallel_process = 5
+
+while (count < total_matches):
+    apps_ids = {}
+    first_item = count
+    last_item = first_item + parallel_process
+    if total_matches < last_item:
+        last_item = total_matches
+    number_of_executions = last_item-first_item
+    success_fail_apps = 0
+    for vm_ip in vms_ip[first_item:last_item]:
+        print("Importing VM: {}".format(vm_ip))
+        application_uuid = esxi_brownfield_import(BP_SPEC, vm_ip)
+        if application_uuid == "":
+            print("ERROR: Failed to import vm: {}".format(vm_ip))
+            continue
+        apps_ids[application_uuid] = "provisioning"
+    count += parallel_process
+    
+    if len(apps_ids) < number_of_executions:
+        number_of_executions = len(apps_ids)
+    while True:
+        for apps_id in apps_ids.keys():
+            print("INFO: Checking application: {}".format(apps_id))
+            if apps_ids[apps_id] == 'provisioning':
+                status = get_single_vm_app_status(base_url, auth, apps_id)
+                if status == 'running':
+                    apps_ids[apps_id] = 'success'
+                    print("INFO: Import success: {}.".format(apps_id))
+                    success_fail_apps += 1
+                elif status == 'provisioning':
+                    print("INFO: Import in-progress: {}.".format(apps_id))
+                else:
+                    apps_ids[apps_id] = 'failed'
+                    print("ERROR: Import failed {}.".format(apps_id))
+                    success_fail_apps += 1
+        if success_fail_apps == number_of_executions:
+            break
+        time.sleep(5)
