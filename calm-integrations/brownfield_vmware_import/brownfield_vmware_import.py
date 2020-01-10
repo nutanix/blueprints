@@ -1,7 +1,7 @@
 import sys, requests, json, re, uuid, time
 
 pc_ip = '10.46.4.2'
-auth = { "username": 'admin', "password": 'Nutanix.123'}
+auth = { "username": 'admin', "password": ''}
 esxi_host_ip = "10.46.33.228"
 project_name = "sample"
 account_name = "vmware_regression"
