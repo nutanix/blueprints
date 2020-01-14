@@ -144,9 +144,8 @@ BP_SPEC = {
 }
 
 ### --------------------------------------------------------------------------------- ###
-def get_vm_spec(vm_meta_info, host_dict):
+def get_vm_spec(vm_meta_info):
     vm_meta = vm_meta_info.split(',')
-    host_uuid = host_dict[vm_meta[7]]
     address = [vm_meta[2]]
     vm_spec = {
         "instance_name": vm_meta[0],
@@ -156,7 +155,7 @@ def get_vm_spec(vm_meta_info, host_dict):
         "num_vcpus_per_socket": vm_meta[4],
         "memory_size_mib": vm_meta[5],
         "guestFamily": vm_meta[6],
-        "host_uuid": host_uuid,
+        "host_uuid": vm_meta[7],
         "datastore_location": vm_meta[8]
     }
     return vm_spec
@@ -264,46 +263,7 @@ def get_single_vm_app_status(base_url, auth, application_uuid):
                 logging.error('Status code: {}'.format(resp.status_code))
                 logging.error('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
 
-### --------------------------------------------------------------------------------- ###
-def get_hosts(base_url, auth, account_uuid):
-    method = 'POST'
-    url = base_url + "/vmware/v6/host/list"
-    payload = {
-        "length":100,
-        "offset":0,
-        "filter":"account_uuid=={0}".format(account_uuid)
-    }
-    try:
-        resp = requests.request(
-            method,
-            url,
-            data=json.dumps(payload),
-            headers=headers,
-            auth=(auth["username"], auth["password"]),
-            verify=False
-        )
-    except requests.exceptions.ConnectionError as e:
-        logging.error("Failed to connect to PC: {}".format(e))
-        sys.exit(1)
-    finally:
-        if resp.ok:
-            json_resp = resp.json()
-            host_dict = {}
-            if len(json_resp['entities']) > 0:
-                for host in json_resp['entities']:
-                    ip = host['status']['resources']["name"]
-                    host_dict[ip] = host['status']['resources']['summary']['hardware']['uuid']
-                return host_dict
-            else:
-                logging.error("No host found")
-        else:
-            logging.error("Request failed")
-            logging.error("Headers: {}".format(headers))
-            logging.error('Status code: {}'.format(resp.status_code))
-            logging.error('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-            sys.exit(1)
 
-### --------------------------------------------------------------------------------- ###
 def esxi_brownfield_import(spec, vm_spec, project_uuid, account_uuid):
     application_uuid = ""
 
@@ -510,10 +470,9 @@ if __name__ == "__main__":
 
     project_uuid = get_project_uuid(base_url, auth, project_name)
     account_uuid = get_vmware_account_uuid(base_url, auth, account_name)
-    host_dict = get_hosts(base_url, auth, account_uuid)
 
-    if project_uuid == "" or account_uuid == "" or host_dict == {}:
-        logging.error("Failed to get project, account or vcenter host details.")
+    if project_uuid == "" or account_uuid == "":
+        logging.error("Failed to get project or account details.")
         sys.exit(1)
 
     total_matches = len(vm_meta_info_list)
@@ -528,7 +487,7 @@ if __name__ == "__main__":
         number_of_executions = last_item-first_item
         success_fail_apps = 0
         for vm_meta_info in vm_meta_info_list[first_item:last_item]:
-            vm_spec = get_vm_spec(vm_meta_info, host_dict)
+            vm_spec = get_vm_spec(vm_meta_info)
             logging.info("Importing VM's: {}".format(vm_spec["instance_name"]))
             launch_status, application_uuid = esxi_brownfield_import(BP_SPEC, vm_spec, project_uuid, account_uuid)
             if launch_status != True:
@@ -540,7 +499,6 @@ if __name__ == "__main__":
             number_of_executions = len(apps_ids)
         while True:
             for apps_id in apps_ids.keys():
-                logging.info("Completed ({}/{}) applications.".format(success_fail_apps, number_of_executions))
                 if apps_ids[apps_id]["state"] == 'provisioning':
                     status = get_single_vm_app_status(base_url, auth, apps_id)
                     if status == 'running':
@@ -555,6 +513,7 @@ if __name__ == "__main__":
                         apps_ids[apps_id]["state"] = 'error'
                         logging.error("Import failed: {}.".format(apps_ids[apps_id]["name"]))
                         success_fail_apps += 1
+                logging.info("Completed ({}/{}) applications.".format(success_fail_apps, number_of_executions))
             if success_fail_apps == number_of_executions:
                 break
             time.sleep(5)
