@@ -2,7 +2,7 @@
 
 Calm Brownfield import scripts help customer to do bulk import of VMware Vm's.
 
-- `01_get_vmware_vmn_info.py` Script takes VCenter host details and whitelisted vm's file as a input and create a metadata csv file with vm information (instance_name,instance_id,address,num_sockets,num_vcpus_per_socket,memory_size_mib,guestFamily,host_uuid,datastore_location)
+- `01_get_vmware_vmn_info.py` Script takes VCenter host details and whitelisted vm's file as a input and create a metadata csv file with vm information esxi_vms_info_list.csv - (instance_name,instance_id,address,num_sockets,num_vcpus_per_socket,memory_size_mib,guestFamily,host_uuid,datastore_location)
 - `02_brownfield_import.py` Script takes the above csv as input and import the vm's into CALM as brownfield apps.
 
 ## Pre-requisites:
@@ -28,7 +28,7 @@ Calm Brownfield import scripts help customer to do bulk import of VMware Vm's.
 
 ## Steps to Execute the script:
 * Create a file with all the whitelisted vmware vm's.
-* Execute below commands to generate whitelisted vm csv.
+* Execute below commands to generate whitelisted vm csv (esxi_vms_info_list.csv).
 ```shell
 ssh user@<PC_IP>
 sudo docker exec -it epsilon bash
