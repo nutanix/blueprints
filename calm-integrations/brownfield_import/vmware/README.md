@@ -24,6 +24,7 @@ Calm Brownfield import scripts help customer to do bulk import of VMware Vm's.
 * --pass - PC password
 * --project-name - PC project name
 * --account-name - VCenter Account name
+* --vm-info - File path of esxi_vms_info_list.csv
 
 ## Steps to Execute the script:
 * Create a file with all the whitelisted vmware vm's.
@@ -41,5 +42,5 @@ python 01_get_vmware_vmn_info.py --host <VCenter host ip> --port 443 --user <VCe
 * Update linux_template_uuid & windows_template_uuid (not required post 2.9.7.1 upgrade) in 02_brownfield_import.py.
 * Execute below commands to start import process.
 ```shell
-python 02_brownfield_import.py --pc <PC ip address> --port <PC Port> --user <PC Username> --pass <PC Password> --project-name <CALM project name> --account-name <VMware project name in CALM>
+python 02_brownfield_import.py --pc <PC ip address> --port <PC Port> --user <PC Username> --pass <PC Password> --project-name <CALM project name> --account-name <VMware project name in CALM> --vm-info /path/to/esxi_vms_info_list.csv
 ```
