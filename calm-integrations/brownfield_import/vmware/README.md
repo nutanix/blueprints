@@ -2,8 +2,8 @@
 
 Calm Brownfield import scripts help customer to do bulk import of VMware Vm's.
 
-`01_get_vmware_vmn_info.py` Script takes VCenter host details and whitelisted vm's file as a input and create a metadata csv file with vm information (instance_name,instance_id,address,num_sockets,num_vcpus_per_socket,memory_size_mib,guestFamily,host_uuid,datastore_location)
-`02_brownfield_import.py` Script takes the above csv as input and import the vm's into CALM as brownfield apps.
+- `01_get_vmware_vmn_info.py` Script takes VCenter host details and whitelisted vm's file as a input and create a metadata csv file with vm information (instance_name,instance_id,address,num_sockets,num_vcpus_per_socket,memory_size_mib,guestFamily,host_uuid,datastore_location)
+- `02_brownfield_import.py` Script takes the above csv as input and import the vm's into CALM as brownfield apps.
 
 ## Pre-requisites:
 * Calm 2.9.x
