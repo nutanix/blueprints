@@ -67,8 +67,8 @@ def parse_service_instance(datacenter, service_instance):
                 for h in obj.host:
                     nic = h.config.network.vnic[0].spec
                     esxi_config = h.summary.config
-                    host_ip = h.summary.config.name
-                    host_id = str(h).split(":")[1][:-1]
+                    #host_ip = h.summary.config.name
+                    #host_id = str(h).split(":")[1][:-1]
                     host_uuid = h.hardware.systemInfo.uuid
 
                     for vx in h.vm:
@@ -82,7 +82,7 @@ def parse_service_instance(datacenter, service_instance):
 
                             vm_info  = [vx.name, str(vx).split(":")[1][:-1], vx.summary.guest.ipAddress,  
                                 vx.config.hardware.numCPU, vx.config.hardware.numCoresPerSocket, 
-                                vx.summary.config.memorySizeMB, os, host_ip, host_id, host_uuid, datastore[0]]
+                                vx.summary.config.memorySizeMB, os, host_uuid, datastore[0]]
                             
                             vm_info_list.append(vm_info)
     object_view.Destroy()
