@@ -87,7 +87,7 @@ def parse_service_instance(datacenter, service_instance):
     object_view.Destroy()
 
 
-    with open('esxi_vms_info_list.csv', 'w') as file:
+    with open("{}.csv".format(datacenter), 'w') as file:
         writer = csv.writer(file)
         writer.writerows(vm_info_list)
 
