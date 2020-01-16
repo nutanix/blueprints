@@ -396,7 +396,7 @@ def esxi_brownfield_import(spec, vm_spec, project_uuid, account_uuid):
 
     ### Update uuids, project ref, account ref, bp name, vm-info etc.
     updated_spec = change_uuids(spec, {})
-    if vm_spec["guestFamily"] == "linux":
+    if vm_spec["guestFamily"] == "Linux":
         template_uuid = linux_template_uuid
     else:
         template_uuid = windows_template_uuid
