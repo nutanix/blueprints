@@ -497,6 +497,7 @@ if __name__ == "__main__":
         count += parallel_process
         if len(apps_ids) < number_of_executions:
             number_of_executions = len(apps_ids)
+        time.sleep(10)
         while True:
             for apps_id in apps_ids.keys():
                 if apps_ids[apps_id]["state"] == 'provisioning':
