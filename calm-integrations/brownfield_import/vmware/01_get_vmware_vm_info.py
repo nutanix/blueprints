@@ -20,7 +20,7 @@ def help_parser():
     parser = argparse.ArgumentParser(
         description='Standard Arguments for talking to vCenter or ESXi')
 
-    parser.add_argument('-s', '--host',
+    parser.add_argument('-s', '--vcenterip',
                         required=True,
                         action='store',
                         help='vSphere service to connect to')
@@ -39,12 +39,12 @@ def help_parser():
     parser.add_argument('-u', '--user',
                         required=True,
                         action='store',
-                        help='User name to use when connecting to host')
+                        help='User name to use when connecting to VCenter')
 
     parser.add_argument('-p', '--password',
                         required=True,
                         action='store',
-                        help='Password to use when connecting to host')
+                        help='Password to use when connecting to VCenter')
 
     return parser
 
@@ -57,13 +57,13 @@ def parse_service_instance(datacenter, service_instance):
     content = service_instance.RetrieveContent()
     object_view = content.viewManager.CreateContainerView(content.rootFolder, [], True)
     vm_info_list = []
+    vm_info_list.append(["virutal_machine_name","virutal_machine_uuid","virtual_machine_ip","num_cpu",
+        "num_vcpus","memory_size","guest_family","host_uuid","datastore"])
 
     for obj in object_view.view:
         if isinstance(obj, vim.ComputeResource):
             if isinstance(obj, vim.ClusterComputeResource) and obj.name == datacenter :
-
-                #print('VcenterCluster: {}'.format(obj.name))
-                #instance_name,instance_id,address,num_sockets,num_vcpus_per_socket,memory_size_mib,guestFamily,host_ip, host_id, host_uuid, datastore
+                #instance_name,instance_id,address,num_sockets,num_vcpus_per_socket,memory_size_mib,guestFamily,host_uuid, datastore
                 for h in obj.host:
                     nic = h.config.network.vnic[0].spec
                     esxi_config = h.summary.config
@@ -86,7 +86,6 @@ def parse_service_instance(datacenter, service_instance):
                             vm_info_list.append(vm_info)
     object_view.Destroy()
 
-
     with open("{}.csv".format(datacenter), 'w') as file:
         writer = csv.writer(file)
         writer.writerows(vm_info_list)
@@ -100,7 +99,7 @@ def makeConnect(parser):
         context.verify_mode = ssl.CERT_NONE
 
         service_instance = connect.SmartConnect(
-            host=parser.host,
+            host=parser.vcenterip,
             user=parser.user,
             pwd=parser.password,
             port=parser.port,
@@ -113,7 +112,6 @@ def makeConnect(parser):
 
         atexit.register(connect.Disconnect, service_instance)
 
-        # ## Do the actual parsing of data ## #
         parse_service_instance(parser.datacenter, service_instance)
 
     except vmodl.MethodFault as e:
