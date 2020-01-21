@@ -1,7 +1,12 @@
 import sys, json, re, uuid, time
 import logging, argparse
 import requests
-logging.basicConfig(filename='brownfield_import.log',level=logging.INFO)
+logging.basicConfig(
+        filename='brownfield_import.log',
+        format='%(asctime)s %(levelname)-8s %(message)s',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
 
 linux_template_uuid = "50204284-5a62-9f9f-16c1-de61da074ee7"
 windows_template_uuid = "5020b0fe-19fa-bbfe-0d94-844a9a4145d2"
@@ -237,6 +242,35 @@ def get_vmware_account_uuid(base_url, auth, account_name):
             sys.exit(1)
 
 ### --------------------------------------------------------------------------------- ###
+def get_vmware_account_info(base_url, auth, account_uuid):
+    method = 'GET'
+    url = base_url + "/accounts/{}".format(account_uuid)
+    try:
+        resp = requests.request(
+            method,
+            url,
+            headers=headers,
+            auth=(auth["username"], auth["password"]),
+            verify=False
+        )
+    except requests.exceptions.ConnectionError as e:
+        logging.error("Failed to connect to PC: {}".format(e))
+        sys.exit(1)
+    finally:
+        if resp.ok:
+            json_resp = resp.json()
+            if json_resp['status']['resources']["state"] != "VERIFIED":
+                return False, "", ""
+            else:
+                return True, json_resp['status']['resources']["data"]["server"], json_resp['status']['resources']["data"]["datacenter"]
+        else:
+            logging.error("Request failed")
+            logging.error("Headers: {}".format(headers))
+            logging.error('Status code: {}'.format(resp.status_code))
+            logging.error('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
+            sys.exit(1)
+
+### --------------------------------------------------------------------------------- ###
 def get_single_vm_app_status(base_url, auth, application_uuid):
     method = 'GET'
     url = base_url + "/apps/{}".format(application_uuid)
@@ -252,6 +286,7 @@ def get_single_vm_app_status(base_url, auth, application_uuid):
             )
         except requests.exceptions.ConnectionError as e:
             logging.error("Failed to connect to PC: {}".format(e))
+            return ""
         finally:
             if resp.ok:
                 json_resp = resp.json()
@@ -262,6 +297,7 @@ def get_single_vm_app_status(base_url, auth, application_uuid):
                 logging.error("Headers: {}".format(headers))
                 logging.error('Status code: {}'.format(resp.status_code))
                 logging.error('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
+                return ""
 
 
 def esxi_brownfield_import(spec, vm_spec, project_uuid, account_uuid):
@@ -420,13 +456,14 @@ def esxi_brownfield_import(spec, vm_spec, project_uuid, account_uuid):
 
     updated_spec["spec"]["resources"]["substrate_definition_list"][0] = substrate
     updated_spec["spec"]["resources"]["app_profile_list"][0]["deployment_create_list"][0]["brownfield_instance_list"][0] = brownfield_instance
-    updated_spec["spec"]["name"] = vm_spec["instance_name"]
-    
+    updated_spec["spec"]["name"] = vm_spec["instance_name"].replace(" ", "_")
+
     ### Create a single vm bp
     create_status, resp = create_single_vm_bp(base_url, auth, updated_spec)
     if create_status != True:
         return False, resp
-    ### Update single vm bp spec
+
+    ### Update single vm bp spec to launch
     del resp["status"]
     blueprint_uuid = resp["metadata"]["uuid"]
 
@@ -466,7 +503,7 @@ if __name__ == "__main__":
         logging.error("File not found: '{}' .".format(file_path))
         sys.exit(1)
     finally:
-        vm_meta_info_list = vm_meta_info_content.read().splitlines()
+        vm_meta_info_list = vm_meta_info_content.read().splitlines()[1:]
 
     project_uuid = get_project_uuid(base_url, auth, project_name)
     account_uuid = get_vmware_account_uuid(base_url, auth, account_name)
@@ -474,6 +511,11 @@ if __name__ == "__main__":
     if project_uuid == "" or account_uuid == "":
         logging.error("Failed to get project or account details.")
         sys.exit(1)
+    status, vcenter_ip, datacenter = get_vmware_account_info(base_url, auth, account_uuid)
+    
+    logging.info("Brownfield import process started.")
+    logging.info("VCenter IP: '{}'.".format(vcenter_ip))
+    logging.info("Datacenter: '{}'.".format(datacenter))
 
     total_matches = len(vm_meta_info_list)
     count = 0
@@ -486,35 +528,36 @@ if __name__ == "__main__":
             last_item = total_matches
         number_of_executions = last_item-first_item
         success_fail_apps = 0
+        count += number_of_executions
         for vm_meta_info in vm_meta_info_list[first_item:last_item]:
             vm_spec = get_vm_spec(vm_meta_info)
-            logging.info("Importing VM's: {}".format(vm_spec["instance_name"]))
+            logging.info("Importing VM: '{}' ({})".format(vm_spec["instance_name"], vm_spec["address"][0]))
             launch_status, application_uuid = esxi_brownfield_import(BP_SPEC, vm_spec, project_uuid, account_uuid)
             if launch_status != True:
                 logging.error("Import failed: {}.".format(vm_spec["instance_name"]))
                 continue
-            apps_ids[application_uuid] = { "name" : vm_spec["instance_name"], "state" :"provisioning" }
-        count += parallel_process
+            apps_ids[application_uuid] = { "name" : vm_spec["instance_name"], "state" : "provisioning", "ip" : vm_spec["address"][0]}
         if len(apps_ids) < number_of_executions:
             number_of_executions = len(apps_ids)
-        time.sleep(10)
         while True:
             for apps_id in apps_ids.keys():
                 if apps_ids[apps_id]["state"] == 'provisioning':
                     status = get_single_vm_app_status(base_url, auth, apps_id)
+                    logging.info("Checking application '{}' ({}) status.".format(apps_ids[apps_id]["name"], apps_ids[apps_id]["ip"]))
                     if status == 'running':
                         apps_ids[apps_id]["state"] = 'success'
-                        logging.info("Import successful: {}.".format(apps_ids[apps_id]["name"]))
+                        logging.info("Application '{}' ({}) import successful.".format(apps_ids[apps_id]["name"], apps_ids[apps_id]["ip"]))
                         success_fail_apps += 1
                     elif status == "failed":
                         apps_ids[apps_id]["state"] = 'failed'
-                        logging.error("Import failed: {}.".format(apps_ids[apps_id]["name"]))
+                        logging.error("Application '{}' ({}) import failed.".format(apps_ids[apps_id]["name"], apps_ids[apps_id]["ip"]))
                         success_fail_apps += 1
                     elif status == "error":
                         apps_ids[apps_id]["state"] = 'error'
-                        logging.error("Import failed: {}.".format(apps_ids[apps_id]["name"]))
+                        logging.error("Application '{}' ({}) import failed.".format(apps_ids[apps_id]["name"], apps_ids[apps_id]["ip"]))
                         success_fail_apps += 1
-                logging.info("Completed ({}/{}) applications.".format(success_fail_apps, number_of_executions))
             if success_fail_apps == number_of_executions:
+                logging.info("Completed ({}/{}) applications.".format(count, total_matches))
                 break
-            time.sleep(5)
+            time.sleep(10)
+    logging.info("Completed brownfield import.")
