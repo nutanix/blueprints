@@ -1,4 +1,4 @@
-import sys, json, re, uuid, time
+import os, sys, json, re, uuid, time
 import logging, argparse
 import requests
 logging.basicConfig(
@@ -147,6 +147,17 @@ BP_SPEC = {
       "name": ""
     }
 }
+
+def create_open_file(file_name, file_operation):
+    if not os.path.exists(file_name) and file_operation == "r":
+        with open(file_name, 'w'): pass
+    try:
+        file = open(file_name, file_operation)
+    except:
+        logging.error("Failed to open file '{}' with operation '{}'.".format(file_name, file_operation))
+        sys.exit(1)
+    return file
+    
 
 ### --------------------------------------------------------------------------------- ###
 def get_vm_spec(vm_meta_info):
@@ -496,14 +507,21 @@ if __name__ == "__main__":
     file_path = parser.vm_info
     parallel_process = parser.parallel
 
-    vm_meta_info_list = []
-    try:
-        vm_meta_info_content = open(file_path, "r")
-    except IOError:
-        logging.error("File not found: '{}' .".format(file_path))
-        sys.exit(1)
-    finally:
-        vm_meta_info_list = vm_meta_info_content.read().splitlines()[1:]
+    vm_input_list = []
+
+    vm_input_content = create_open_file(file_path, "r")
+    vm_input_list = vm_input_content.read().splitlines()[1:]
+
+    vm_input_success_content = create_open_file("brownfield_import_success.csv", "r")
+    vm_input_success_list = vm_input_success_content.read().splitlines()
+    vm_input_success_content.close()
+
+    vm_input_failed_content = create_open_file("brownfield_import_failed.csv", "r")
+    vm_input_failed_list = vm_input_failed_content.read().splitlines()
+    vm_input_failed_content.close()
+
+    vm_output_success_content = create_open_file("brownfield_import_success.csv", "a+")
+    vm_output_failed_content = create_open_file("brownfield_import_failed.csv", "a+")
 
     project_uuid = get_project_uuid(base_url, auth, project_name)
     account_uuid = get_vmware_account_uuid(base_url, auth, account_name)
@@ -517,7 +535,7 @@ if __name__ == "__main__":
     logging.info("VCenter IP: '{}'.".format(vcenter_ip))
     logging.info("Datacenter: '{}'.".format(datacenter))
 
-    total_matches = len(vm_meta_info_list)
+    total_matches = len(vm_input_list)
     count = 0
 
     while (count < total_matches):
@@ -529,14 +547,19 @@ if __name__ == "__main__":
         number_of_executions = last_item-first_item
         success_fail_apps = 0
         count += number_of_executions
-        for vm_meta_info in vm_meta_info_list[first_item:last_item]:
+        for vm_meta_info in vm_input_list[first_item:last_item]:
             vm_spec = get_vm_spec(vm_meta_info)
+            if vm_meta_info in vm_input_success_list:
+                logging.info("Application '{}' already imported.".format(vm_spec["instance_name"]))
+                continue
             logging.info("Importing VM: '{}' ({})".format(vm_spec["instance_name"], vm_spec["address"][0]))
             launch_status, application_uuid = esxi_brownfield_import(BP_SPEC, vm_spec, project_uuid, account_uuid)
             if launch_status != True:
                 logging.error("Import failed: {}.".format(vm_spec["instance_name"]))
+                if vm_meta_info not in vm_input_failed_list:
+                    vm_output_failed_content.write("{}\n".format(vm_meta_info))
                 continue
-            apps_ids[application_uuid] = { "name" : vm_spec["instance_name"], "state" : "provisioning", "ip" : vm_spec["address"][0]}
+            apps_ids[application_uuid] = { "name" : vm_spec["instance_name"], "state" : "provisioning", "ip" : vm_spec["address"][0], "csv": vm_meta_info}
         if len(apps_ids) < number_of_executions:
             number_of_executions = len(apps_ids)
         while True:
@@ -547,14 +570,19 @@ if __name__ == "__main__":
                     if status == 'running':
                         apps_ids[apps_id]["state"] = 'success'
                         logging.info("Application '{}' ({}) import successful.".format(apps_ids[apps_id]["name"], apps_ids[apps_id]["ip"]))
+                        vm_output_success_content.write("{}\n".format(apps_ids[apps_id]["csv"]))
                         success_fail_apps += 1
                     elif status == "failed":
                         apps_ids[apps_id]["state"] = 'failed'
                         logging.error("Application '{}' ({}) import failed.".format(apps_ids[apps_id]["name"], apps_ids[apps_id]["ip"]))
+                        if apps_ids[apps_id]["csv"] not in vm_input_failed_list:
+                            vm_output_failed_content.write("{}\n".format(apps_ids[apps_id]["csv"]))
                         success_fail_apps += 1
                     elif status == "error":
                         apps_ids[apps_id]["state"] = 'error'
                         logging.error("Application '{}' ({}) import failed.".format(apps_ids[apps_id]["name"], apps_ids[apps_id]["ip"]))
+                        if apps_ids[apps_id]["csv"] not in vm_input_failed_list:
+                            vm_output_failed_content.write("{}\n".format(apps_ids[apps_id]["csv"]))
                         success_fail_apps += 1
             if success_fail_apps == number_of_executions:
                 logging.info("Completed ({}/{}) applications.".format(count, total_matches))
