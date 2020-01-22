@@ -25,10 +25,10 @@ def help_parser():
                         action='store',
                         help='vSphere service to connect to')
 
-    parser.add_argument('-d', '--datacenter',
+    parser.add_argument('-d', '--clustername',
                         required=True,
                         action='store',
-                        help='Datacenter to connect  to')
+                        help='cluster name in VCenter datacenter')
 
     parser.add_argument('-o', '--port',
                         type=int,
@@ -48,7 +48,7 @@ def help_parser():
 
     return parser
 
-def parse_service_instance(datacenter, service_instance):
+def parse_service_instance(clustername, service_instance):
     '''
     :param service_instance:
     :return:
@@ -57,12 +57,12 @@ def parse_service_instance(datacenter, service_instance):
     content = service_instance.RetrieveContent()
     object_view = content.viewManager.CreateContainerView(content.rootFolder, [], True)
     vm_info_list = []
-    vm_info_list.append(["virutal_machine_name","virutal_machine_uuid","virtual_machine_ip","num_cpu",
+    vm_info_list.append(["virtual_machine_name","virtual_machine_uuid","virtual_machine_ip","num_cpu",
         "num_vcpus","memory_size","guest_family","host_uuid","datastore"])
 
     for obj in object_view.view:
         if isinstance(obj, vim.ComputeResource):
-            if isinstance(obj, vim.ClusterComputeResource) and obj.name == datacenter :
+            if isinstance(obj, vim.ClusterComputeResource) and obj.name == clustername :
                 #instance_name,instance_id,address,num_sockets,num_vcpus_per_socket,memory_size_mib,guestFamily,host_uuid, datastore
                 for h in obj.host:
                     nic = h.config.network.vnic[0].spec
@@ -86,7 +86,7 @@ def parse_service_instance(datacenter, service_instance):
                             vm_info_list.append(vm_info)
     object_view.Destroy()
 
-    with open("{}.csv".format(datacenter), 'w') as file:
+    with open("{}.csv".format(clustername), 'w') as file:
         writer = csv.writer(file)
         writer.writerows(vm_info_list)
 
@@ -112,7 +112,7 @@ def makeConnect(parser):
 
         atexit.register(connect.Disconnect, service_instance)
 
-        parse_service_instance(parser.datacenter, service_instance)
+        parse_service_instance(parser.clustername, service_instance)
 
     except vmodl.MethodFault as e:
         return -1
