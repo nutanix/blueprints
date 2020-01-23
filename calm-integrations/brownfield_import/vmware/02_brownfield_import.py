@@ -47,7 +47,7 @@ def help_parser():
                         help='File path of esxi vm metadata csv')
     parser.add_argument('-n', '--parallel',
                         type=int,
-                        default=2,
+                        default=5,
                         action='store',
                         help='Number of parallel executions')
     return parser
@@ -529,7 +529,11 @@ if __name__ == "__main__":
     if project_uuid == "" or account_uuid == "":
         logging.error("Failed to get project or account details.")
         sys.exit(1)
+
     status, vcenter_ip, datacenter = get_vmware_account_info(base_url, auth, account_uuid)
+    if status != True:
+        logging.error("Failed to get VCenter details.")
+        sys.exit(1)
     
     logging.info("Brownfield import process started.")
     logging.info("VCenter IP: '{}'.".format(vcenter_ip))

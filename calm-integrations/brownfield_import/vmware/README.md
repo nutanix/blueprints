@@ -1,46 +1,57 @@
 # Calm brownfield import of VMware VM's
 
-Calm Brownfield import scripts help customer to do bulk import of VMware Vm's.
-
-- `01_get_vmware_vm_info.py` Script takes VCenter host details and whitelisted vm's file as a input and create a metadata csv file with vm information esxi_vms_info_list.csv - (instance_name,instance_id,address,num_sockets,num_vcpus_per_socket,memory_size_mib,guestFamily,host_uuid,datastore_location)
-- `02_brownfield_import.py` Script takes the above csv as input and import the vm's into CALM as brownfield apps.
+Calm Brownfield import scripts help customer to do bulk import of existing VMware Vm's into CALM to do day2 operation like Stop/Start/VM Update/Snapshot/Restore/Clone with cloud like experience.
 
 ## Pre-requisites:
 * Calm 2.9.x
-* VCenter
+* VCenter 6+
+
+
+- `01_get_vmware_vm_info.py` Script takes VCenter host and Datacenter/Cluster information as a input and create vm metadata csv file, contents of file - (virutal_machine_name,virutal_machine_uuid,virtual_machine_ip,num_cpu,num_vcpus,memory_size,guest_family,host_uuid,datastore)
+- `02_brownfield_import.py` Script takes the above csv as input and import the vm's into CALM as apps.
+
+## Steps to install Install pyvmomi on centos 7.x:
+```shell
+sudo yum install -y python-pip
+pip install --upgrade pip
+pip install pyvmomi
+```
 
 ## Inputs for 01_get_vmware_vm_info.py:
-* --host - VCenter Host ip address
-* --port - VCenter api port
+* --vcenterip - VCenter Host ip address
+* --port - VCenter api port (Optional, Default=443)
 * --user - VCenter Username
 * --pass - Vcenter Password
-* --dc - VCenter Datacenter
-* --whitelist-vms - File path of whitelisted VCenter vm's to be imported
+* --clustername - VCenter Datacenter
+
+## Steps to execute 01_get_vmware_vm_info.py:
+```shell
+python 01_get_vmware_vm_info.py -s <VCenter host ip> -u <VCenter username> -p <VCenter Password> -d <VCenter Cluster Name under datacenter>
+```
+* Above command gives a vm meta csv file <cluster name>.csv
+* Next script takes vm meta csv file as input and imports the vm's in CALM.
+
+## Steps to install Install requests on centos 7.x:
+```shell
+sudo yum install -y python-pip
+pip install --upgrade pip
+pip install requests
+```
 
 ## Inputs for 02_brownfield_import.py:
 * --pc - PC ip address
-* --port - PC port
+* --port - PC port (Optional, Default=9440)
 * --user - PC username
 * --pass - PC password
-* --project-name - PC project name
-* --account-name - VCenter Account name
-* --vm-info - File path of esxi_vms_info_list.csv
+* --project - PC project name
+* --account - VCenter Account name
+* --vm-info - File path of <cluster name>.csv
+* --parallel - Number of parallel executions (Optional, Default=5)
 
-## Steps to Execute the script:
-* Create a file with all the whitelisted vmware vm's.
-* Execute below commands to generate whitelisted vm csv (esxi_vms_info_list.csv).
+![Brownfield import flow](images/CALM_Brownfield_import.jpg)
+
+## Steps to execute 02_brownfield_import.py:
+* Get linux template uuid and windows template uuid & Update in the script (not required post 2.9.7.1 upgrade) in 02_brownfield_import.py.
 ```shell
-ssh user@<PC_IP>
-sudo docker exec -it epsilon bash
-cd /tmp
-#copy paste contents of "01_get_vmware_vm_info.py" to "01_get_vmware_vm_info.py"
-#copy paste contents of whitelisted vmware vm's to "whitelisted_vms"
-activate
-python 01_get_vmware_vm_info.py --host <VCenter host ip> --port 443 --user <VCenter username> --pass <VCenter Password> --dc <VCenter Datacenter> --whitelist-vms <File path of whitelisted vm's>
-```
-* Copy the generated csv to any linux/windows vm with python 2.7.x installed (pip install requests too)
-* Update linux_template_uuid & windows_template_uuid (not required post 2.9.7.1 upgrade) in 02_brownfield_import.py.
-* Execute below commands to start import process.
-```shell
-python 02_brownfield_import.py --pc <PC ip address> --port <PC Port> --user <PC Username> --pass <PC Password> --project-name <CALM project name> --account-name <VMware project name in CALM> --vm-info /path/to/esxi_vms_info_list.csv
+python 02_brownfield_import.py --pc <PC ip address> --user <PC Username> --pass <PC Password> --project <CALM project name> --account <CALM VMware account name> --vm-info /path/to/<cluster name>.csv
 ```
