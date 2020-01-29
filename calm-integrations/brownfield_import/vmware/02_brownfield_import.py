@@ -157,7 +157,6 @@ def create_open_file(file_name, file_operation):
         logging.error("Failed to open file '{}' with operation '{}'.".format(file_name, file_operation))
         sys.exit(1)
     return file
-    
 
 ### --------------------------------------------------------------------------------- ###
 def get_vm_spec(vm_meta_info):
@@ -172,7 +171,8 @@ def get_vm_spec(vm_meta_info):
         "memory_size_mib": vm_meta[5],
         "guestFamily": vm_meta[6],
         "host_uuid": vm_meta[7],
-        "datastore_location": vm_meta[8]
+        "datastore_location": vm_meta[8],
+        "power_state": vm_meta[9]
     }
     return vm_spec
 
@@ -458,6 +458,7 @@ def esxi_brownfield_import(spec, vm_spec, project_uuid, account_uuid):
     substrate["create_spec"]["resources"]["num_vcpus_per_socket"] = vm_spec["num_vcpus_per_socket"]
     substrate["create_spec"]["resources"]["num_sockets"] = vm_spec["num_sockets"]
     substrate["create_spec"]["resources"]["memory_size_mib"] = vm_spec["memory_size_mib"]
+    substrate["create_spec"]["resources"]["power_state"] = vm_spec["power_state"]
 
     brownfield_instance = updated_spec["spec"]["resources"]["app_profile_list"][0]["deployment_create_list"][0]["brownfield_instance_list"][0]
     brownfield_instance["instance_name"] = vm_spec["instance_name"]
@@ -534,7 +535,7 @@ if __name__ == "__main__":
     if status != True:
         logging.error("Failed to get VCenter details.")
         sys.exit(1)
-    
+
     logging.info("Brownfield import process started.")
     logging.info("VCenter IP: '{}'.".format(vcenter_ip))
     logging.info("Datacenter: '{}'.".format(datacenter))
