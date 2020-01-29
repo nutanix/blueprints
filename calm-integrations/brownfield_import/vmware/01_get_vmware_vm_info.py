@@ -76,12 +76,13 @@ def parse_service_instance(clustername, service_instance):
                             ## Check if guestFullName contains `Windows` to determine the guest os is windows
                             ## otherwise we assumed that it is linux.
                             os = "Windows" if "Windows" in vx.summary.config.guestFullName else "Linux"
+                            power_state = "poweron" if vx.runtime.powerState == "poweredOn" else "poweroff"
 
                             ## We assume here that guest os datastore will always have url start as `ds:///vmfs/volumes`
                             datastore =  [ d.info.url for d in vx.datastore if d.info.url.startswith("ds:///vmfs/volumes")]
                             vm_info  = [vx.name, vx.config.instanceUuid, vx.summary.guest.ipAddress,
                                 vx.config.hardware.numCPU, vx.config.hardware.numCoresPerSocket,
-                                vx.summary.config.memorySizeMB, os, host_uuid, datastore[0]]
+                                vx.summary.config.memorySizeMB, os, host_uuid, datastore[0], power_state]
 
                             vm_info_list.append(vm_info)
     object_view.Destroy()
