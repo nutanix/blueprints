@@ -12,7 +12,7 @@
 username = "@@{vc.username}@@"
 password = "@@{vc.secret}@@"
 api_server = "@@{vc_endpoint}@@"
-vc_tag_id= "@@{vc_tag_id}@@" # retreived from VcRestCreateTag
+vc_tag_id= '@@{calm_array_vc_tag_id}@@' # retrieved from VcRestCreateTag
 vc_tag_action = "attach" #attach / detach
 vm_id = "@@{vc_vm_id}@@" #retreived from VcSoapGetObjects
 #endregion
