@@ -1,0 +1,6 @@
+<FirstLogonCommands>
+    <SynchronousCommand>
+    <CommandLine>cmd.exe /c powershell -Command mkdir C:\test</CommandLine>
+    <Order>1</Order>
+    </SynchronousCommand>
+</FirstLogonCommands>
