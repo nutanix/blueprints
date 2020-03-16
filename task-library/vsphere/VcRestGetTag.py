@@ -5,7 +5,7 @@
 # task_name:    VcRestGetTag
 # description:  Retreives a specific tag id based on the tag's name
 #               The scripts list all tags and filter
-# input vars:   vc_cookie, api_server, vc_tag_name
+# input vars:   api_server, vc_tag_name
 # output vars:  vc_tag_id
 #endregion
 
