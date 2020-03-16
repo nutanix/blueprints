@@ -1,0 +1,8 @@
+<AutoLogon>
+  <Password>
+    <Value>@@{creds.secret}@@</Value>
+    <PlainText>true</PlainText>
+  </Password>
+  <Enabled>true</Enabled>
+  <Username>@@{creds.username}@@</Username>
+</AutoLogon>
