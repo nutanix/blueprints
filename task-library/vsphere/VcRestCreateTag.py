@@ -1,12 +1,12 @@
 #region headers
 # * authors:     igor.zecevic@nutanix.com, stephane.bourdeaud@nutanix.com
-# * version:    v1.1 - added login/logout logic (stephane)
-# * date:       13/03/2020
+# * version:    v1.2 - added logic if category already exists (stephane)
+# * date:       16/03/2020
 # task_name:    VcRestCreateTag
 # description:  Create a vCenter Tag
 #               Important: A category needs to be created first
 #               The script creates a Category and a Tag
-# input vars:   vc_cookie, api_server, vc_category_name, vc_tag_name
+# input vars:   api_server, vc_category_name, vc_tag_name
 #               vc_category_description, vc_tag_description
 # output vars:  vc_tag_id, vc_category_id
 #endregion
@@ -75,15 +75,16 @@ vc_cookie = resp.headers.get('Set-Cookie').split(";")[0]
 #endregion
 
 #region main processing
-#region prepare api call
+
+#region create vcenter category
+
+# prepare api call
 api_server_port = "443"
 api_server_endpoint = "/rest/com/vmware/cis/tagging"
 method = "POST"
 base_url = "https://{}:{}{}".format(api_server, api_server_port, api_server_endpoint)
 headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'Cookie': vc_cookie}
-#endregion
 
-#region create vcenter category
 payload = {
 "create_spec": {
     "associable_types": [],
@@ -97,7 +98,24 @@ payload = {
 url = "{}/category".format(base_url)
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
-vc_category_id = format(json.loads(resp.content)['value'])
+if resp.status_code == 400:
+    # category already exists, so we need to get its object id
+    method = "GET"
+    print("Making a {} API call to {}".format(method, url))
+    categories = process_request(url, method, headers)
+    categories_parsed = json.loads(categories.content)
+    vc_category_id = ""
+    for category in categories_parsed['value']:
+        category_url = "{}/id:{}".format(url,category)
+        print("Making a {} API call to {}".format(method, category_url))
+        category_object = process_request(category_url, method, headers)
+        category_parse = json.loads(category_object.content)
+        if category_parse['value']['name'] == vc_category_name:
+            vc_category_id = category_parse['value']['id']
+            break
+else:
+    vc_category_id = format(json.loads(resp.content)['value'])
+
 #endregion
 
 #region create vcenter tag
@@ -111,9 +129,26 @@ payload = {
 
 # make the api call
 url = "{}/tag".format(base_url)
+method = "POST"
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
-vc_tag_id = format(json.loads(resp.content)['value'])
+if resp.status_code == 400:
+    # category already exists, so we need to get its object id
+    method = "GET"
+    print("Making a {} API call to {}".format(method, url))
+    tags = process_request(url, method, headers)
+    tags_parsed = json.loads(tags.content)
+    vc_tag_id = ""
+    for tag in tags_parsed['value']:
+        tag_url = "{}/id:{}".format(url,tag)
+        print("Making a {} API call to {}".format(method, category_url))
+        tag_object = process_request(tag_url, method, headers)
+        tag_parse = json.loads(tag_object.content)
+        if tag_parse['value']['name'] == vc_tag_name:
+            vc_tag_id = tag_parse['value']['id']
+            break
+else:
+    vc_tag_id = format(json.loads(resp.content)['value'])
 #endregion
 
 # pass the created tag in vc_tag_id so that it may be captured by Calm.
