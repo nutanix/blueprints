@@ -23,8 +23,8 @@ if "@@{calm_array_index}@@" != "0":
 username = "@@{vc.username}@@"
 password = "@@{vc.secret}@@"
 api_server = "@@{vc_endpoint}@@"
-vc_tag_id = "@@{calm_array_vc_tag_id}@@" #retreived from VcRestCreateTag
-vc_category_id = "@@{calm_array_vc_category_id}@@" #retreived from VcRestCreateTag
+vc_tag_id = "@@{vc_tag_id}@@" #retreived from VcRestCreateTag
+vc_category_id = "@@{vc_category_id}@@" #retreived from VcRestCreateTag
 #endregion
 
 #region API call function
