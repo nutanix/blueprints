@@ -77,21 +77,28 @@ method = 'POST'
 url = "https://"+ cluster_ip + ":9440/PrismGateway/services/rest/v1/vms/" + vm_uuid + "/guest_tools/mount"
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, pc_user, pc_password,headers)
-result = json.loads(resp.content)
+if resp.content:
+    result = json.loads(resp.content)
+else:
+    print("Request did not return any content.")
 
 if resp.ok:
+    print('Status code: {}'.format(resp.status_code))
     # print the content of the response
-    print(json.dumps(
-        json.loads(resp.content),
-        indent=4
-    ))
-    print "NGT mounted"
+    if resp.content:
+        print(json.dumps(
+            json.loads(resp.content),
+            indent=4
+        ))
+        print "NGT mounted"
 else:
+    print('Status code: {}'.format(resp.status_code))
     # print the content of the response (which should have the error message)
-    print("Request failed", json.dumps(
-        json.loads(resp.content),
-        indent=4
-    ))
+    if resp.content:
+        print("Request failed", json.dumps(
+            json.loads(resp.content),
+            indent=4
+        ))
     print("Headers: {}".format(headers))
     print("Payload: {}".format(payload))
     exit(1)
@@ -110,22 +117,27 @@ payload = {
     }
 }
 resp = process_request(url, method, pc_user, pc_password,headers, payload)
-result = json.loads(resp.content)
+if resp.content:
+    result = json.loads(resp.content)
 
 if resp.ok:
+    print('Status code: {}'.format(resp.status_code))
     # print the content of the response
-    print(json.dumps(
-        json.loads(resp.content),
-        indent=4
-    ))
-    print "NGT enabled"
+    if resp.content:
+        print(json.dumps(
+            json.loads(resp.content),
+            indent=4
+        ))
+        print "NGT enabled"
     exit(0)
 else:
+    print('Status code: {}'.format(resp.status_code))
     # print the content of the response (which should have the error message)
-    print("Request failed", json.dumps(
-        json.loads(resp.content),
-        indent=4
-    ))
+    if resp.content:
+        print("Request failed", json.dumps(
+            json.loads(resp.content),
+            indent=4
+        ))
     print("Headers: {}".format(headers))
     print("Payload: {}".format(payload))
     exit(1)
