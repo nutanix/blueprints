@@ -18,13 +18,16 @@
 # endregion
 
 # region headers
-# escript-template v20190611 / stephane.bourdeaud@nutanix.com
+# escript-template v20200316 / stephane.bourdeaud@nutanix.com
 # TODO Fill in this section with your information
 # * author:     <your email address here>
 # * version:    <date / notes>
 # task_name:    <enter the name of the task this script is for as it appears
 # in your blueprint>
 # description:
+# task type:    SetVariable or Execute
+# input_vars:   credname (credentials), endpoint_ip
+# output_vars:
 # endregion
 
 # region capture Calm variables
@@ -33,6 +36,41 @@
 username = '@@{credname.username}@@'
 username_secret = "@@{credname.secret}@@"
 api_server = "@@{endpoint_ip}@@"
+# endregion
+
+# region api call function
+def process_request(url, method, headers, payload=None):
+    if (payload is not None):
+        payload = json.dumps(payload)
+    #* using basic authentication if no cookie was passed in the headers
+    if "Cookie" not in headers:
+        # ! Get rid of verify=False if you're using proper certificates
+        r = urlreq(url, verb=method, auth='BASIC', user=username, passwd=password, params=payload, verify=False, headers=headers)
+    else:
+        # ! Get rid of verify=False if you're using proper certificates
+        r = urlreq(url, verb=method, params=payload, verify=False, headers=headers)
+    #* now dealing with the response
+    if r.ok:
+        print("Request was successful")
+        print("Status code: {}".format(r.status_code))
+        if (r.content and ('/rest/com/vmware/cis/session' not in url)):
+            print('Response: {}'.format(json.dumps(json.loads(r.content), indent=4)))
+    #* use this to deal with specific api error code
+    #elif ((r.status_code == 400):
+    #    print("Status code: {}".format(r.status_code))
+    #    print("Object already exists: skipping")
+    else:
+        print("Request failed")
+        print('Status code: {}'.format(r.status_code))
+        #* printing headers can be a security breach if you expose the cookie
+        if "Cookie" not in headers:
+            print("Headers: {}".format(headers))
+        if (payload is not None):
+            print("Payload: {}".format(json.dumps(payload)))
+        if r.content:
+            print('Response: {}'.format(json.dumps(json.loads(r.content), indent=4)))
+        exit(1)
+    return r
 # endregion
 
 # region prepare api call
@@ -61,31 +99,8 @@ payload = {
 # region make api call
 # make the API call and capture the results in the variable called "resp"
 print("Making a {} API call to {}".format(method, url))
-# ! Get rid of verify=False if you're using proper certificates
-resp = urlreq(
-    url,
-    verb=method,
-    auth='BASIC',
-    user=username,
-    passwd=username_secret,
-    params=json.dumps(payload),
-    headers=headers,
-    verify=False
-)
+resp = process_request(url, method, headers, payload)
 
-# ! You should not have to change the code below, unless you are passing on
-# ! a variable in which case you will need to print it under "if resp.ok"
+# ! If you are passing on a variable you will need to print it
 # ! example: print("calm_variable_name={}".format(python_variable))
-# deal with the result/response
-if resp.ok:
-    print("Request was successful")
-    print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-    exit(0)
-else:
-    print("Request failed")
-    print("Headers: {}".format(headers))
-    print("Payload: {}".format(json.dumps(payload)))
-    print('Status code: {}'.format(resp.status_code))
-    print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-    exit(1)
 # endregion
