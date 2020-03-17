@@ -1,4 +1,3 @@
-#script
 #region headers
 # * authors:     igor.zecevic@nutanix.com, stephane.bourdeaud@nutanix.com
 # * version:    v1.1 - added login/logout logic (stephane)
@@ -23,8 +22,8 @@ if "@@{calm_array_index}@@" != "0":
 username = "@@{vc.username}@@"
 password = "@@{vc.secret}@@"
 api_server = "@@{vc_endpoint}@@"
-vc_tag_id = "@@{vc_tag_id}@@" #retreived from VcRestCreateTag
-vc_category_id = "@@{vc_category_id}@@" #retreived from VcRestCreateTag
+vc_tag_id = "@@{calm_array_vc_tag_id}@@" #retreived from VcRestCreateTag
+vc_category_id = "@@{calm_array_vc_category_id}@@" #retreived from VcRestCreateTag
 #endregion
 
 #region API call function
@@ -65,6 +64,7 @@ headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
 #endregion
 
 #region login API call
+print("STEP: Logging in to vCenter...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers)
 vc_cookie = resp.headers.get('Set-Cookie').split(";")[0]
@@ -82,12 +82,14 @@ payload = {}
 #endregion
 
 #region delete tag
+print("STEP: Deleting tag...")
 url = '{0}/tag/id:{1}'.format(base_url,vc_tag_id)
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
 #endregion
 
 #region delete category
+print("STEP: Deleting category...")
 url = '{0}/category/id:{1}'.format(base_url,vc_category_id)
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
@@ -104,6 +106,7 @@ headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'Co
 #endregion
 
 #region logout API call
+print("STEP: Logging out of vCenter...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers)
 #endregion

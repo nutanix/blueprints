@@ -68,6 +68,7 @@ headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
 #endregion
 
 #region login API call
+print("STEP: Logging in to vCenter...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers)
 vc_cookie = resp.headers.get('Set-Cookie').split(";")[0]
@@ -95,6 +96,7 @@ payload = {
 }
 
 # make the api call
+print("STEP: Creating category...")
 url = "{}/category".format(base_url)
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
@@ -128,6 +130,7 @@ payload = {
 }
 
 # make the api call
+print("STEP: Creating tag...")
 url = "{}/tag".format(base_url)
 method = "POST"
 print("Making a {} API call to {}".format(method, url))
@@ -166,6 +169,7 @@ headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'Co
 #endregion
 
 #region logout API call
+print("STEP: Logging out of vCenter...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers)
 #endregion

@@ -61,6 +61,7 @@ payload = '''
 </soapenv:Envelope>'''
 
 # making the api call
+print("STEP: Logging in to vCenter...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
 
@@ -96,6 +97,7 @@ payload_push.text = "/"+datacenter+"/vm/"+vm_folder_name+""
 payload = ET.tostring(payload_parse)
 
 # making the call
+print("STEP: Fetching vm folder id...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
 #endregion
@@ -128,6 +130,7 @@ payload = '''
 </soapenv:Envelope>'''
 
 # making the api call
+print("STEP: Logging out of vCenter...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
 #endregion
