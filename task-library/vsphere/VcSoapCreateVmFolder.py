@@ -24,6 +24,7 @@ password = "@@{vc.secret}@@"
 vm_folder_root_id = "@@{vc_vm_folder_root_id}@@" # retreived from VcSoapGetObjects
 vm_folder_name = "@@{calm_application_name}@@"
 api_server = "@@{vc_endpoint}@@"
+datacenter = "@@{vc_datacenter}@@"
 #endregion
 
 #region API call function
@@ -35,16 +36,14 @@ def process_request(url, method, headers, payload):
     else:
         print("Request failed")
         print("Status Code: {}".format(r))
-        print("Headers: {}".format(headers))
-        print("Payload: {}".format(payload))
-        print("Response: {}".format(r.text))
+        #print("Headers: {}".format(headers))
+        #print("Payload: {}".format(payload))
+        #print("Response: {}".format(r.text))
         resp_parse = ET.fromstring(r.text)
         for element in resp_parse.iter('*'):
           if "faultstring" in element.tag:
-            print("")
             print("Error: {}".format(element.text))
             break
-        exit(1)
     return r
 #endregion
 
@@ -71,6 +70,7 @@ payload = '''
 </soapenv:Envelope>'''
 
 # making the api call
+print("STEP: Logging in to vCenter...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
 
@@ -102,15 +102,56 @@ payload = '''
 </soapenv:Envelope>'''
 
 # making the call
+print("STEP: Creating the folder...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
+base_payload = '''
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns="urn:vim25">
+  <soapenv:Body>
+    <FindByInventoryPath>
+      <_this type="SearchIndex">SearchIndex</_this>
+    </FindByInventoryPath>
+  </soapenv:Body>
+</soapenv:Envelope>'''
+if resp.ok:
+  # print the vm_folder_id
+  resp_parse = ET.fromstring(resp.text)
+  for element in resp_parse.iter('*'):
+      if "returnval" in element.tag:
+          print("vc_vm_folder_id: {}".format(element.text))
+elif resp.status_code == 500:
+  resp_parse = ET.fromstring(resp.text)
+  #//debug: print("resp_parse:{}".format(resp_parse))
+  for element in resp_parse.iter('*'):
+    #//debug: print("element.text:{}".format(element.text))
+    if "faultstring" in element.tag:
+      if "already exists" in element.text:
+        #fetch the existing folder id
+        payload_parse = ET.fromstring(base_payload)
+        payload_find = payload_parse.find(".//{urn:vim25}FindByInventoryPath")
+        payload_push = ET.SubElement(payload_find,"inventoryPath")
+        payload_push.text = "/{0}/vm/{1}".format(datacenter,vm_folder_name)
+        payload = ET.tostring(payload_parse)
+
+        # making the call
+        print("STEP: Fetching folder object id...")
+        print("Making a {} API call to {}".format(method, url))
+        resp = process_request(url, method, headers, payload)
+
+        # get vm_folder_root_id
+        resp_parse = ET.fromstring(resp.text)
+        resp_find = resp_parse.findall(".//{urn:vim25}returnval")
+        if resp_find:
+          for element in resp_find:
+              print("vc_vm_folder_id={}".format(element.text))
+              exit(0)
+        else:
+          print("Error, couldn't retrieve the folder object..")
+          exit(1)
+else:
+  exit(1)
 #endregion
 
-# print the vm_folder_id
-resp_parse = ET.fromstring(resp.text)
-for element in resp_parse.iter('*'):
-    if "returnval" in element.tag:
-        print("vc_vm_folder_id: {}".format(element.text))
 #endregion
 
 #region logout
@@ -134,6 +175,7 @@ payload = '''
 </soapenv:Envelope>'''
 
 # making the api call
+print("STEP: Logging out of vCenter...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
 #endregion

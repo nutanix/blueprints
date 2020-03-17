@@ -12,7 +12,7 @@
 username = "@@{vc.username}@@"
 password = "@@{vc.secret}@@"
 api_server = "@@{vc_endpoint}@@"
-vc_tag_id= '@@{vc_tag_id}@@' # retrieved from VcRestCreateTag
+vc_tag_id= '@@{calm_array_vc_tag_id}@@' # retrieved from VcRestCreateTag
 vc_tag_action = "attach" #attach / detach
 vm_id = "@@{vc_vm_id}@@" #retreived from VcSoapGetObjects
 #endregion
@@ -55,6 +55,7 @@ headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
 #endregion
 
 #region login API call
+print("STEP: Logging in to vCenter...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers)
 vc_cookie = resp.headers.get('Set-Cookie').split(";")[0]
@@ -79,6 +80,7 @@ payload = {
     }
 
 # make the api call
+print("STEP: Doing tag attach/detach...")
 url = "{0}:{1}?~action={2}".format(base_url, vc_tag_id, vc_tag_action)
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
@@ -96,6 +98,7 @@ headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'Co
 #endregion
 
 #region logout API call
+print("STEP: Logging out of vCenter...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers)
 #endregion

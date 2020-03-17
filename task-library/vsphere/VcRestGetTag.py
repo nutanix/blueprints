@@ -54,6 +54,7 @@ headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
 #endregion
 
 #region login API call
+print("STEP: Logging in to vCenter...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers)
 vc_cookie = resp.headers.get('Set-Cookie').split(";")[0]
@@ -71,6 +72,7 @@ headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'Co
 
 #region get tag id
 # get all tags
+print("STEP: Gettings tags...")
 url = format(base_url)
 print("Making a {} API call to {}".format(method, url))
 all_tags = process_request(base_url, method, headers)
@@ -106,6 +108,7 @@ headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'Co
 #endregion
 
 #region logout API call
+print("STEP: Logging out of vCenter...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers)
 #endregion

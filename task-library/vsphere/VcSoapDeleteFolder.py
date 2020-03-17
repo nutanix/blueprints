@@ -22,7 +22,7 @@ if "@@{calm_array_index}@@" != "0":
 #region capture Calm variables
 username = "@@{vc.username}@@"
 password = "@@{vc.secret}@@"
-vm_folder_id = "@@{vc_vm_folder_id}@@" #retreived from VcSoapGetObjects
+vm_folder_id = "@@{calm_array_vc_vm_folder_id}@@" #retreived from VcSoapGetObjects
 api_server = "@@{vc_endpoint}@@"
 #endregion
 
@@ -71,6 +71,7 @@ payload = '''
 </soapenv:Envelope>'''
 
 # making the api call
+print("STEP: Logging in to vCenter...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
 
@@ -100,6 +101,7 @@ payload = '''
 </soapenv:Envelope>'''
 
 # making the call
+print("STEP: Deleting vm folder...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
 #endregion
@@ -132,6 +134,7 @@ payload = '''
 </soapenv:Envelope>'''
 
 # making the api call
+print("STEP: Logging out of vCenter...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
 #endregion
