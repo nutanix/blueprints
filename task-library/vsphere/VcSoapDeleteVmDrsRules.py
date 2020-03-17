@@ -23,7 +23,7 @@ if "@@{calm_array_index}@@" != "1":
 # region capture Calm variables
 username = "@@{vc.username}@@"
 password = "@@{vc.secret}@@"
-cluster_id = "@@{calm_array_vc_cluster_id}@@" #retreived from VcSoapGetObjects
+cluster_id = "@@{vc_cluster_id}@@" #retreived from VcSoapGetObjects
 drs_rule_name = "@@{calm_application_name}@@"
 drs_operation = "remove" #add / edit / remove
 api_server = "@@{vc_endpoint}@@"
