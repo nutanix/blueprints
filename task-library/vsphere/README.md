@@ -19,20 +19,26 @@ Typical task workflows include (to be added to the install/uninstall packages of
     Install package workflow:
     a/ VcSoapGetObjects
     b/ VcSoapCreateVmFolder
-    c/ VcSoapMoveVmFolder (to vc_vm_folder_id)
+    c/ Wait for 45 seconds
+    d/ VcSoapGetVmFolder
+    e/ VcSoapMoveVmFolder (to vc_vm_folder_id)
 
     Uninstall package workflow:
     a/ VcSoapMoveVmFolder (to vc_vm_folder_root_id)
-    b/ VcSoapDeleteFolder
+    b/ Wait for 45 seconds
+    c/ VcSoapDeleteFolder
 
 2/ Tagging VMs with the Calm application instance name:
 
     Install package workflow:
     a/ VcRestCreateTag
-    b/ VcRestTagAssociation (with the 'attach' action)
+    b/ Wait for 45 seconds
+    c/ VcRestGetTag
+    d/ VcRestTagAssociation (with the 'attach' action)
 
     Uninstall package workflow:
     a/ VcRestTagAssociation (with the 'detach' action)
+    b/ Wait for 45 seconds
     b/ VcRestDeleteTag
 
 3/ Creating and updating VM anti-affinity rules for VMs within the same service of the same Calm application instance:

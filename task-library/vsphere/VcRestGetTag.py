@@ -27,15 +27,15 @@ def process_request(url, method, headers, payload=None):
     if r.ok:
         print("Request was successful")
         print("Status code: {}".format(r.status_code))
-        if (r.content and ('/rest/com/vmware/cis/session' not in url)):
-            print('Response: {}'.format(json.dumps(json.loads(r.content), indent=4)))
+        #if (r.content and ('/rest/com/vmware/cis/session' not in url)):
+        #    print('Response: {}'.format(json.dumps(json.loads(r.content), indent=4)))
     elif ((r.status_code == 400) and (json.loads(r.content)['type'] == 'com.vmware.vapi.std.errors.already_exists')):
         print("Status code: {}".format(r.status_code))
         print("Object already exists: skipping")
     else:
         print("Request failed")
         print('Status code: {}'.format(r.status_code))
-        print("Headers: {}".format(headers))
+        #print("Headers: {}".format(headers))
         if (payload is not None):
             print("Payload: {}".format(json.dumps(payload)))
         if r.content:

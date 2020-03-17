@@ -22,7 +22,7 @@ if "@@{calm_array_index}@@" != "0":
 #region capture Calm variables
 username = "@@{vc.username}@@"
 password = "@@{vc.secret}@@"
-vm_folder_id = "@@{calm_array_vc_vm_folder_id}@@" #retreived from VcSoapGetObjects
+vm_folder_id = "@@{vc_vm_folder_id}@@" #retreived from VcSoapGetObjects
 api_server = "@@{vc_endpoint}@@"
 #endregion
 
