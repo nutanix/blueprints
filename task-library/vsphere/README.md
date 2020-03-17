@@ -39,16 +39,18 @@ Typical task workflows include (to be added to the install/uninstall packages of
     Uninstall package workflow:
     a/ VcRestTagAssociation (with the 'detach' action)
     b/ Wait for 45 seconds
-    b/ VcRestDeleteTag
+    c/ VcRestDeleteTag
 
 3/ Creating and updating VM anti-affinity rules for VMs within the same service of the same Calm application instance:
 
     Install package workflow:
     a/ VcSoapCreateVmDrsRules
-    b/ VcSoapUpdateVmDrsRules (with the 'edit' and 'add' actions)
+    b/ Wait for 45 seconds
+    c/ VcSoapUpdateVmDrsRules (with the 'edit' and 'add' actions)
 
     Uninstall package workflow
     a/ VcSoapUpdateVmDrsRules (with the 'edit' and 'remove' actions)
-    b/ VcSoapDeleteVmDrsRules
+    b/ Wait for 45 seconds
+    c/ VcSoapDeleteVmDrsRules
 
 Note that all those tasks include login/logout at a task level to avoid session timeout issues and deliver more consistent results.
