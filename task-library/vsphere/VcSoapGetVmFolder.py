@@ -25,9 +25,9 @@ def process_request(url, method, headers, payload):
     else:
         print("Request failed")
         print("Status Code: {}".format(r))
-        print("Headers: {}".format(headers))
-        print("Payload: {}".format(payload))
-        print("Response: {}".format(r.text))
+        #print("Headers: {}".format(headers))
+        #print("Payload: {}".format(payload))
+        #print("Response: {}".format(r.text))
         resp_parse = ET.fromstring(r.text)
         for element in resp_parse.iter('*'):
           if "faultstring" in element.tag:

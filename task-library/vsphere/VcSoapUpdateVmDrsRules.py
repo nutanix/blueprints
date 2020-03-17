@@ -25,7 +25,7 @@ if "@@{calm_array_index}@@" < "2":
 # region capture Calm variables
 username = "@@{vc.username}@@"
 password = "@@{vc.secret}@@"
-cluster_id = "@@{calm_array_vc_cluster_id}@@" #retreived from VcSoapGetObjects
+cluster_id = "@@{vc_cluster_id}@@" #retreived from VcSoapGetObjects
 drs_rule_name = "@@{calm_application_name}@@"
 drs_operation = "edit" #add / edit / remove
 drs_vm_update = "add" #add or remove VM from drsrules
