@@ -62,6 +62,7 @@ payload = '''
 </soapenv:Envelope>'''
 
 # making the api call
+print("STEP: Logging in to vCenter...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
 
@@ -89,49 +90,53 @@ base_payload = '''
 #endregion
 
 #region get the vm root folder id (/datacenter_name/vm)
-payload_parse = ET.fromstring(base_payload)
-payload_find = payload_parse.find(".//{urn:vim25}FindByInventoryPath")
-payload_push = ET.SubElement(payload_find,"inventoryPath")
-payload_push.text = "/{0}/vm/".format(datacenter)
-payload = ET.tostring(payload_parse)
+if "@@{calm_array_index}@@" == "0":
+  payload_parse = ET.fromstring(base_payload)
+  payload_find = payload_parse.find(".//{urn:vim25}FindByInventoryPath")
+  payload_push = ET.SubElement(payload_find,"inventoryPath")
+  payload_push.text = "/{0}/vm/".format(datacenter)
+  payload = ET.tostring(payload_parse)
 
-# making the call
-print("Making a {} API call to {}".format(method, url))
-resp = process_request(url, method, headers, payload)
+  # making the call
+  print("STEP: Fetching root vm folder id...")
+  print("Making a {} API call to {}".format(method, url))
+  resp = process_request(url, method, headers, payload)
 
-# get vm_folder_root_id
-resp_parse = ET.fromstring(resp.text)
-resp_find = resp_parse.findall(".//{urn:vim25}returnval")
-if resp_find:
-  for element in resp_find:
-      print("vc_vm_folder_root_id={}".format(element.text))
-else:
-  print("Error, couldn't retreive the object..")
-  print("The object: "+datacenter+" doesn't seem to be present, check the provided input")
-  exit(1) 
+  # get vm_folder_root_id
+  resp_parse = ET.fromstring(resp.text)
+  resp_find = resp_parse.findall(".//{urn:vim25}returnval")
+  if resp_find:
+    for element in resp_find:
+        print("vc_vm_folder_root_id={}".format(element.text))
+  else:
+    print("Error, couldn't retreive the object..")
+    print("The object: "+datacenter+" doesn't seem to be present, check the provided input")
+    exit(1) 
 #endregion
 
 #region get the cluster id (/datacenter_name/host/cluster_name)
-payload_parse = ET.fromstring(base_payload)
-payload_find = payload_parse.find(".//{urn:vim25}FindByInventoryPath")
-payload_push = ET.SubElement(payload_find,"inventoryPath")
-payload_push.text = "/{0}/host/{1}".format(datacenter, cluster)
-payload = ET.tostring(payload_parse)
+if "@@{calm_array_index}@@" == "0":
+  payload_parse = ET.fromstring(base_payload)
+  payload_find = payload_parse.find(".//{urn:vim25}FindByInventoryPath")
+  payload_push = ET.SubElement(payload_find,"inventoryPath")
+  payload_push.text = "/{0}/host/{1}".format(datacenter, cluster)
+  payload = ET.tostring(payload_parse)
 
-# making the call
-print("Making a {} API call to {}".format(method, url))
-resp = process_request(url, method, headers, payload)
+  # making the call
+  print("STEP: Fetching cluster id...")
+  print("Making a {} API call to {}".format(method, url))
+  resp = process_request(url, method, headers, payload)
 
-# get the cluster_id
-resp_parse = ET.fromstring(resp.text)
-resp_find = resp_parse.findall(".//{urn:vim25}returnval")
-if resp_find:
-  for element in resp_find:
-      print("vc_cluster_id={}".format(element.text))
-else:
-  print("Error, couldn't retreive the object..")
-  print("The object: "+cluster+" doesn't seem to be present, check the provided input")
-  exit(1) 
+  # get the cluster_id
+  resp_parse = ET.fromstring(resp.text)
+  resp_find = resp_parse.findall(".//{urn:vim25}returnval")
+  if resp_find:
+    for element in resp_find:
+        print("vc_cluster_id={}".format(element.text))
+  else:
+    print("Error, couldn't retreive the object..")
+    print("The object: "+cluster+" doesn't seem to be present, check the provided input")
+    exit(1) 
 #endregion
 
 #region get the vm id (/datacenter_name/host/vm_name)
@@ -142,6 +147,7 @@ payload_push.text = "/{0}/vm/{1}".format(datacenter, vm_name)
 payload = ET.tostring(payload_parse)
 
 # making the call
+print("STEP: Fetching vm id...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
 
@@ -179,6 +185,7 @@ payload = '''
 </soapenv:Envelope>'''
 
 # making the api call
+print("STEP: Logging out of vCenter...")
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
 #endregion
