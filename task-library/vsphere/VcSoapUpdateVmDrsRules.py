@@ -14,9 +14,8 @@
 # endregion
 
 # region dealing with Scaling In/Out the application
-# this script will be executed only on the third Service/Instance
-# (ie: Service[2])
-if "@@{calm_array_index}@@" < "2":
+nb_replicas = str(len("@@{calm_array_name}@@".split(",")) - 1)
+if (("@@{calm_array_index}@@" != nb_replicas) or ("@@{calm_array_index}@@" < "2")):
     print("This task is not required on this Instance ..")
     print("Skipping this task ..")
     exit(0)
@@ -31,6 +30,7 @@ drs_operation = "edit" #add / edit / remove
 drs_vm_update = "add" #add or remove VM from drsrules
 api_server = "@@{vc_endpoint}@@"
 vm_id = "@@{vc_vm_id}@@"  #retreived from VcSoapGetObjects
+ref_vm_list = "@@{calm_array_vc_vm_id}@@".split(",")
 # endregion
 
 #region API call function
@@ -129,8 +129,25 @@ payload_find = resp_parse.findall(".//{urn:vim25}ClusterRuleInfo")
 for element in payload_find:
     for name in element.findall("{urn:vim25}name"):
         if name.text == drs_rule_name:
+            print("Found DRS rule: {}".format(name.text))
+            vm_list = []
             drs_rule_key = format(element.find("{urn:vim25}key").text)
             drs_rule_element = element #this element will be pushed to the update drs rules
+            for vm in element.findall("{urn:vim25}vm"):
+                print("This vm is a member of the drs rule: {}".format(vm.text))
+                vm_list.append(vm.text)
+
+vms_to_add = list(set(ref_vm_list) - set(vm_list))
+print("The following vms are not in DRS: {}".format(vms_to_add))
+try:
+    drs_rule_key
+    drs_rule_element
+except:
+    for element in payload_find:
+        for name in element.findall("{urn:vim25}name"):
+            print("Existing DRS rule: {}".format(name.text))
+    print("Could not find drs rule!")
+    exit(1)
 # endregion
 
 # region update drs rules
@@ -159,9 +176,11 @@ for element in drs_rule_element:
 
 # push the drs_vm_update to the payload (either add or delete vm)
 if drs_vm_update == "add":
-  vm_push = ET.SubElement(payload_push,"vm")
-  vm_push.attrib["type"]="VirtualMachine"
-  vm_push.text = vm_id
+      for vm in vms_to_add:
+            print ("Adding vm {}".format(vm))
+            vm_push = ET.SubElement(payload_push,"vm")
+            vm_push.attrib["type"]="VirtualMachine"
+            vm_push.text = vm
 elif drs_vm_update == "remove":
   for element in drs_rule_element:
       if element.text == vm_id:
@@ -170,6 +189,7 @@ elif drs_vm_update == "remove":
 # make the api call
 print("STEP: Updating drs rule...")
 payload = ET.tostring(payload_parse)
+#print("payload: {}".format(payload))
 print("Making a {} API call to {}".format(method, url))
 resp = process_request(url, method, headers, payload)
 # endregion
