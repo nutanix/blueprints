@@ -49,8 +49,6 @@ Typical task workflows include (to be added to the install/uninstall packages of
     c/ VcSoapUpdateVmDrsRules (with the 'edit' and 'add' actions)
 
     Uninstall package workflow
-    a/ VcSoapUpdateVmDrsRules (with the 'edit' and 'remove' actions)
-    b/ Wait for 45 seconds
-    c/ VcSoapDeleteVmDrsRules
+    a/ VcSoapDeleteVmDrsRules
 
 Note that all those tasks include login/logout at a task level to avoid session timeout issues and deliver more consistent results.
