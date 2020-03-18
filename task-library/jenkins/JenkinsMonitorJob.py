@@ -63,6 +63,5 @@ while job_status != 'SUCCESS':
        print("Request failed")
        print("Headers: {}".format(headers))
        print('Status code: {}'.format(resp.status_code))
-       print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-       exit(1)
+       print('Response: {}'.format(json.dumps(resp.content)))
     # endregion
