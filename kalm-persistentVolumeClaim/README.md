@@ -13,6 +13,7 @@ This Nutanix Kalm blueprint will create a Persistent Volume Claim and deploy a B
 - Tested on Nutanix Karbon 2.0 only but should work the same way on any platform that supports native Kubernetes API
 - Minimum hardware requirements: few resources, CPU and memory, available on your Kubernetes cluster
 - Variables: kube_namespace, kube_pvc_name, kube_pvc_storageClass, kube_pvc_accessMode, kube_pvc_size, kube_calm_sa_token, kubemaster_ip
+  - **kube_calm_sa_token**. A Kubernetes service account is required for Calm to interact with the Kubernetes cluster (more details below)
 - Credentials: there is a dummy credential. Just complete the password with a dummy one too.
 - Minimum # of Pods required: 1
 - Actions: Default
@@ -29,10 +30,25 @@ This Nutanix Kalm blueprint will create a Persistent Volume Claim and deploy a B
 To deploy this blueprint you will need the following things available:
 
 - A Kubernetes cluster with native API (Preferable Karbon because Dynamic Storage Provisioning)
+- A Kubernetes service account for Calm (more details below)
 - A Calm project with a Kubernetes cluster (Karbon in this example)
 - A Kubernetes namespace must exists before you can deploy the application (this is using the default namespace)
 
 ## Usage
+
+- Create the Kubernetes service account for Calm
+
+  - Create account
+  
+  ```shell
+  kubectl apply -f Calm_serviceAccount.yaml
+  ```
+
+  - Retrieve token. Copy the token that the following command will ouput and use it as value for **kube_calm_sa_token** variable.
+  
+  ```shell
+  kubectl -n default describe secret calm-karbon-secret
+  ```
 
 - Import the blueprint into your Nutanix Calm environment
 - Adjust the Kubernetes cluster in the pods
