@@ -4,8 +4,8 @@
 # * date:       11/03/2020
 # task_name:    VeeamGetHierarchyRoots
 # description:  Get the hierarchyRoot UID
-#               The script retreives the hierarchyRoots UID
-# input vars:   vc_server, api_server, username, password
+#               The script retreives the hierarchyRoots uid, ie: vCenter or ManagedServer
+# input vars:   vc_server
 # output vars:  veeam_hierarchyroot_uid
 # endregion
 

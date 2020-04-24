@@ -3,10 +3,9 @@
 # * version:    v1.0 - initial version
 # * date:       11/03/2020
 # task_name:    VeeamGetJob
-# description:  Get Job's url
-#               The script retreives a specific job
-#               url based on the provided job's name
-# input vars:   veeam_job_name, api_server, username, password
+# description:  Get Veeam Backup Job
+#               The script retreives a specific job based on a provided job's name
+# input vars:   veeam_job_name
 # output vars:  veeam_job_url
 # endregion
 
@@ -14,7 +13,7 @@
 username = "@@{veeam.username}@@"
 password = "@@{veeam.secret}@@"
 #veeam_job_name = "@@{calm_application_name}@@"  # getting the calm apps job
-veeam_job_name = "@@{veeam_job_template_name}@@" # getting the template job on veeam
+veeam_job_name = "@@{veeam_job_template_name}@@" # getting the backup template job on veeam
 api_server = "@@{veeam_endpoint}@@"
 
 # region API call function

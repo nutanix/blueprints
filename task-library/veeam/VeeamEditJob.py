@@ -4,13 +4,10 @@
 # * date:       11/03/2020
 # task_name:    VeeamEditJob
 # description:  Edit a Veeam Job
-#               The script edits a Veeam Job using the 
-#               the veeam_job_url found on VeeamGetJob
-#               and attach a category_id found on 
-#               VcRestGetCategory
-# input vars:   username, password, veeam_start_url,
-#               veeam_job_name, vc_category_name,
-# #             vc_category_id, api_server
+#               The script edits a Veeam Job
+#               and attach a category_id found on  VcRestGetCategory
+# input vars:   veeam_job_name, vc_category_name, vc_category_id
+#               veeam_hierarchyroot_uid, veeam_job_daily_schedule
 # output vars:  none
 # endregion
 
@@ -29,8 +26,8 @@ password = "@@{veeam.secret}@@"
 veeam_job_name = "@@{calm_application_name}@@"  # getting the calm apps job
 veeam_hierarchyroot_uid = "@@{veeam_hierarchyroot_uid}@@"
 veeam_job_daily_schedule = "@@{veeam_job_daily_schedule}@@"
-vc_category_id = "@@{calm_array_vc_category_id}@@"
-vc_category_name = "@@{jira_parent_ticket}@@"
+vc_category_id = "@@{vc_category_id}@@"
+vc_category_name = "@@{vc_category_name}@@"
 api_server = "@@{veeam_endpoint}@@"
 # endregion
 

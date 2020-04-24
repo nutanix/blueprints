@@ -4,11 +4,8 @@
 # * date:       11/03/2020
 # task_name:    VeeamCloneJob
 # description:  Clone a Veeam Job
-#               The script clones a Veeam Job using the 
-#               the veeam_job_url and veeam_repo_uid found
-#               on the VeeamGetJob and VeeamGetRepository
-# input vars:   username, password veeam_job_url
-#               veeam_job_name, veeam_repo_uid, api_server
+#               The script clones an exisiting Veeam Job
+# input vars:   veaam_job_name, veeam_job_template_name, veeam_repo_uuid
 # output vars:  none
 # endregion
 
@@ -27,7 +24,6 @@ password = "@@{veeam.secret}@@"
 veeam_job_name = "@@{calm_application_name}@@"  # getting the calm apps job
 veeam_job_template_name = "@@{veeam_job_template_name}@@" # getting the template job on veeam
 veeam_repo_uid = "@@{veeam_repo_uid}@@"
-veeam_job_name = "@@{calm_application_name}@@"
 api_server = "@@{veeam_endpoint}@@"
 # endregion
 

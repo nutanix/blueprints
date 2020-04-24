@@ -4,9 +4,8 @@
 # * date:       11/03/2020
 # task_name:    VeeamStartJob
 # description:  Starts a Veeam Job
-#               The script starts a Veeam Job using the 
-#               the veeam_job_url on VeeamGetJob
-# input vars:   veeam_session_cookie, veeam_job_start_url, api_server
+#               The script starts a Veeam Job using the the veeam_job_name
+# input vars:   veeam_job_start_name
 # output vars:  none
 # endregion
 

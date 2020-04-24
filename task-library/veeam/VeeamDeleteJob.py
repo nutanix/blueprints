@@ -4,9 +4,8 @@
 # * date:       11/03/2020
 # task_name:    VeeamDeleteJob
 # description:  Deletes a Veeam Job
-#               The script deletes a Veeam Job using the 
-#               the veeam_job_url on VeeamGetJob
-# input vars:   username, password, veeam_job_url, api_server
+#               The script deletes a Veeam Job
+# input vars:   veeem_job_name
 # output vars:  none
 # endregion
 

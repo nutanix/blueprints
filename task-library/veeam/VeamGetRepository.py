@@ -3,11 +3,9 @@
 # * version:    v1.0 - initial version
 # * date:       11/03/2020
 # task_name:    VeeamGetRepository
-# description:  Get Repository UID
-#               The script retreives the repository uid
-#               based on the provided repository's name
-# input vars:   veeam_job_name, username, password
-#               veeam_repo_name, api_server
+# description:  Get Backup Repository UID
+#               The script retreives the repository uid based on the provided repository's name
+# input vars:   veeam_repo_name
 # output vars:  veeam_repo_uid
 # endregion
 
