@@ -2,14 +2,14 @@
 # * authors:    igor.zecevic@nutanix.com
 # * date:       30/03/2020
 # task_name:    EipGetSubnets
-# description:  get list of subnets
+# description:  Get available networks attached to a site on EfficientIP
 # input vars:   eip_site_name, eip_min_free_ip
 # output vars:  subnet_lists
 #endregion
 
 # this script is used to retreive a list of available subnets on EIP
 # this list is provided during at the application launch using dynaminy variable
-# all print are commented 
+# all print are commented
 
 #region capture Calm variables
 username = "@@{eip_username}@@"

@@ -2,7 +2,7 @@
 # * authors:    igor.zecevic@nutanix.com
 # * date:       30/03/2020
 # task_name:    EipGetSiteId
-# description:  get site id
+# description:  Get site id on EfficientIp
 # input vars:   eip_site_name
 # output vars:  eip_site_id
 #endregion
@@ -30,8 +30,6 @@ def process_request(url, method, headers, payload=None):
     if r.ok:
         print("Request was successful")
         print("Status code: {}".format(r.status_code))
-        #if r.content:
-        #    print('Response: {}'.format(json.dumps(json.loads(r.content), indent=4)))
     elif (r.status_code == 204):
         print("Response: No Content here..")
         exit(1)
