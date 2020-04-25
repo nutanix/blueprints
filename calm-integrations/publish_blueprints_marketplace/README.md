@@ -3,6 +3,9 @@
 ## What does this do?
 This script publishes existing blueprint to marketplace (LOCAL) within a PC without substrate elements.
 
+## Supported Platforms:
+    - VCenter
+
 ## Inputs for publish_blueprints_to_marketplace.py:
 * --pc 						- PC Ip address
 * --port 					- PC Port
