@@ -26,11 +26,6 @@ sudo yum update -y --quiet
 sudo yum install -y --quiet epel-release
 sudo yum install -y --quiet couchdb
 
-# - * - Configure CouchDB
-
-sudo sed -i "s|;admin = mysecretpassword|admin = ${COUCHDB_PASSWORD}|" /opt/couchdb/etc/local.ini
-sudo sed -i "s/;bind_address = 127.0.0.1/bind_address = 0.0.0.0/" /opt/couchdb/etc/local.ini
-
 if [ "${CREATE_VOLUME}" == "yes" ]; then
   sudo yum install -y lvm2 --quiet
   sudo pvcreate /dev/sd{b,c,d}
@@ -42,6 +37,11 @@ if [ "${CREATE_VOLUME}" == "yes" ]; then
   sudo mount -a
   sudo chown -R couchdb:couchdb /var/lib/couchdb
 fi
+
+# - * - Configure CouchDB
+
+sudo sed -i "s|;admin = mysecretpassword|admin = ${COUCHDB_PASSWORD}|" /opt/couchdb/etc/local.ini
+sudo sed -i "s/;bind_address = 127.0.0.1/bind_address = 0.0.0.0/" /opt/couchdb/etc/local.ini
 
 sudo systemctl start couchdb
 sudo systemctl enable couchdb
@@ -57,9 +57,9 @@ for ip in $(echo "${ALL_IPS}" | tr "," "\n"); do
     -d "{\"action\": \"enable_cluster\", \"bind_address\":\"0.0.0.0\", \"username\": \"${COUCHDB_USER}\", \"password\":\"${COUCHDB_PASSWORD}\", \"port\": 15984, \"node_count\": \"${NODE_COUNT}\", \"remote_node\": \"${ip}\", \"remote_current_user\": \"${COUCHDB_USER}\", \"remote_current_password\": \"${COUCHDB_PASSWORD}\" }" \
     http://${IP}:${PORT}/_cluster_setup || true
     
-  	curl -X POST --user ${COUCHDB_USER}:${COUCHDB_PASSWORD} -H "Content-Type: application/json" \
-  	-d "{\"action\":\"add_node\",\"username\":\"${COUCHDB_USER}\",\"password\":\"${COUCHDB_PASSWORD}\",\"host\":\"${ip}\",\"port\":$PORT,\"singlenode\":false}" \
-  	http://${IP}:${PORT}/_cluster_setup || true
+    curl -X POST --user ${COUCHDB_USER}:${COUCHDB_PASSWORD} -H "Content-Type: application/json" \
+    -d "{\"action\":\"add_node\",\"username\":\"${COUCHDB_USER}\",\"password\":\"${COUCHDB_PASSWORD}\",\"host\":\"${ip}\",\"port\":$PORT,\"singlenode\":false}" \
+    http://${IP}:${PORT}/_cluster_setup || true
   fi
 done
 

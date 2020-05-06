@@ -51,14 +51,14 @@ sudo yum update -y --quiet
 
 curl -C - -L -O --retry 6 --retry-max-time 60 --retry-delay 60 --silent --show-error https://storage.googleapis.com/kubernetes-release/release/${KUBE_VERSION}/bin/linux/amd64/kubelet
 curl -C - -L -O --retry 6 --retry-max-time 60 --retry-delay 60 --silent --show-error https://storage.googleapis.com/kubernetes-release/release/${KUBE_VERSION}/bin/linux/amd64/kubectl
-curl -C - -L -O --retry 6 --retry-max-time 60 --retry-delay 60 --silent --show-error https://github.com/containernetworking/plugins/releases/download/v0.7.5/cni-plugins-amd64-v0.7.5.tgz
+curl -C - -L -O --retry 6 --retry-max-time 60 --retry-delay 60 --silent --show-error https://github.com/containernetworking/plugins/releases/download/v0.8.5/cni-plugins-linux-amd64-v0.8.5.tgz
 
 chmod +x kubelet kubectl 
 sudo mv kubelet /usr/bin/kubelet
 sudo mv kubectl /usr/local/bin/
 
-sudo tar -zxvf cni-plugins-amd64-*.tgz -C ${KUBE_CNI_BIN_PATH}
-rm -rf cni-plugins-amd64-*.tgz
+sudo tar -zxvf cni-plugins-linux-amd64-*.tgz -C ${KUBE_CNI_BIN_PATH}
+rm -rf cni-plugins-linux-amd64-*.tgz
 
 if [ "${SSL_ON}" == "yes" ]; then
     echo "INFO: Downloading cfssl & cfssljson for creating certs."
@@ -112,10 +112,10 @@ ExecStart=/usr/bin/kubelet \\
   --network-plugin=cni \\
   --register-node=true \\
   --runtime-cgroups=/systemd/system.slice \\
-  --node-labels 'node-role.kubernetes.io/master=true' \\
-  --node-labels 'node-role.kubernetes.io/etcd=true' \\
-  --register-with-taints=node-role.kubernetes.io/master=true:NoSchedule \\
-  --node-labels 'beta.kubernetes.io/fluentd-ds-ready=true' \\
+  --node-labels 'node.kubernetes.io/master=true' \\
+  --node-labels 'node.kubernetes.io/etcd=true' \\
+  --register-with-taints=node.kubernetes.io/master=true:NoSchedule \\
+  --node-labels 'node.kubernetes.io/fluentd-ds-ready=true' \\
   --v=2
 Restart=on-failure
 RestartSec=5
@@ -170,7 +170,7 @@ spec:
     - --kubelet-client-certificate=${KUBE_CERT_PATH}/kubernetes.pem
     - --kubelet-client-key=${KUBE_CERT_PATH}/kubernetes-key.pem
     - --kubelet-https=true
-    - --runtime-config=api/all
+    - --runtime-config=api/all=true
     - --service-account-key-file=${KUBE_CERT_PATH}/kubernetes.pem
     - --service-cluster-ip-range=${SERVICE_SUBNET}
     - --service-node-port-range=30000-32767
@@ -386,6 +386,7 @@ limits:
   burst: 50" | sudo tee ${KUBE_CERT_PATH}/eventconfig.yaml
 
 echo '{
+  "cniVersion": "0.3.1",
   "name": "cbr0",
   "type": "flannel",
   "delegate": {
