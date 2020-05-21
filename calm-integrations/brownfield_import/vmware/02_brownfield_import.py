@@ -464,6 +464,7 @@ def esxi_brownfield_import(spec, vm_spec, project_uuid, account_uuid):
     brownfield_instance["instance_name"] = vm_spec["instance_name"]
     brownfield_instance["instance_id"] = vm_spec["instance_id"]
     brownfield_instance["address"] = vm_spec["address"]
+    brownfield_instance["power_state"] = vm_spec["power_state"]
     brownfield_instance["platform_data"] = {}
 
     updated_spec["spec"]["resources"]["substrate_definition_list"][0] = substrate

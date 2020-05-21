@@ -58,7 +58,7 @@ def parse_service_instance(clustername, service_instance):
     object_view = content.viewManager.CreateContainerView(content.rootFolder, [], True)
     vm_info_list = []
     vm_info_list.append(["virtual_machine_name","virtual_machine_uuid","virtual_machine_ip","num_cpu",
-        "num_vcpus","memory_size","guest_family","host_uuid","datastore"])
+        "num_vcpus","memory_size","guest_family","host_uuid","datastore","power_state"])
 
     for obj in object_view.view:
         if isinstance(obj, vim.ComputeResource):
