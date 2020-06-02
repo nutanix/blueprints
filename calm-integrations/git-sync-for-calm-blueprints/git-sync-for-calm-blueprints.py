@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import requests
@@ -65,7 +65,7 @@ def create_blueprint(blueprint, project, blueprint_json, account_data):
     password    = account_data['password']
     create_blueprint_endpoint = "https://api.github.com/repos/"+owner+"/"+repo+"/contents/"+project+"/blueprints/"+blueprint+".json"
     payload     = {"message": "creates blueprint "+ blueprint,
-                   "content": base64.b64encode(blueprint_json)}
+                   "content": base64.b64encode(blueprint_json).decode('ascii')}
     response    = requests.put(create_blueprint_endpoint, auth=HTTPBasicAuth(username, password),
                   data=json.dumps(payload))
     respData    = json.loads(response.content)
@@ -79,7 +79,7 @@ def update_blueprint(blueprint, project, blueprint_json, prev_bp_sha, account_da
     password    = account_data['password']
     update_blueprint_endpoint = "https://api.github.com/repos/"+owner+"/"+repo+"/contents/"+project+"/blueprints/"+blueprint+".json"
     payload     = {"message": "updates blueprint "+ blueprint,
-                   "content": base64.b64encode(blueprint_json),
+                   "content": base64.b64encode(blueprint_json).decode('ascii'),
                    "sha"    : prev_bp_sha}
     response    = requests.put(update_blueprint_endpoint, auth=HTTPBasicAuth(username, password),
                   data=json.dumps(payload))
@@ -151,22 +151,22 @@ def git_update(blueprint_names,account_data,pc_data):
         old_bp_sha  = ""
         git_file_list = get_git_file_list(bp["name"], project, account_data, ref="master")
         if  "message" in git_file_list and git_file_list["message"] == "Not Found":
-            print "[WARNING] Project directory {} not found in the repository.".format(bp["project"])
+            print("[WARNING] Project directory {} not found in the repository.".format(bp["project"]))
             sys.exit(1)
-        print "[INFO] Fetching BP {} details.".format(bp["name"])
+        print("[INFO] Fetching BP {} details.".format(bp["name"]))
         blueprint_json = get_content_calm(bp["uuid"], pc_data)
         for file in git_file_list:
             if file["name"] == bp["name"]+".json":
                 old_bp_sha = file["sha"]
                 break
         if old_bp_sha == "":
-            print "[INFO] Creating BP {}.".format(bp["name"])
+            print("[INFO] Creating BP {}.".format(bp["name"]))
             commit_sha = create_blueprint(bp["name"], project, blueprint_json, account_data)
         else:
-            print "[INFO] Updating BP {}.".format(bp["name"])
+            print("[INFO] Updating BP {}.".format(bp["name"]))
             commit_sha = update_blueprint(bp["name"], project, blueprint_json, old_bp_sha, account_data)
 def get_help():
-    print """config.ini file not found or missing some config parameters:
+    print("""config.ini file not found or missing some config parameters:
     [calm]
     pc_ip = <pc_ip>
     pc_port = <pc_port>
@@ -178,13 +178,13 @@ def get_help():
     repository = <git_repository>
     username = <git_username>
     password = <git_password>
-    """
+    """)
 
 if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read('config.ini')
     if 'calm' not in config or 'git' not in config:
-        print "[ERROR] Failed to parse calm/git config in 'config.ini'"
+        print("[ERROR] Failed to parse calm/git config in 'config.ini'")
         get_help()
         sys.exit(1)
     try:
@@ -193,11 +193,11 @@ if __name__ == "__main__":
         account_data["username"] = config["git"]["username"]
         account_data["password"] = config["git"]["password"]
     except KeyError:
-        print "[ERROR] Missing git config 'repository', 'owner', 'username' & 'password'."
+        print("[ERROR] Missing git config 'repository', 'owner', 'username' & 'password'.")
         get_help()
         sys.exit(1)
     except:
-        print "[ERROR] Error while loading config file"
+        print("[ERROR] Error while loading config file")
     try:
         pc_data["ip"] = config["calm"]["pc_ip"]
         pc_data["port"] = config["calm"]["pc_port"]
@@ -205,23 +205,23 @@ if __name__ == "__main__":
         pc_data["password"] = config["calm"]["password"]
         pc_data["project_list"] = config["calm"]["project_list"]
     except KeyError:
-        print "[ERROR] Missing pc config 'pc_ip', 'pc_port', 'username', 'password' & 'project_list'."
+        print("[ERROR] Missing pc config 'pc_ip', 'pc_port', 'username', 'password' & 'project_list'.")
         get_help()
         sys.exit(1)
     except:
-        print "[ERROR] Error while loading config file."
+        print("[ERROR] Error while loading config file.")
 
     git_status = verify_git_creds(account_data["repository"],account_data["owner"],account_data["username"],account_data["password"])
     if git_status != True:
-        print "[ERROR] Failed to authenticate git user."
+        print("[ERROR] Failed to authenticate git user.")
         sys.exit(1)
     pc_status = verify_pc_creds(pc_data["ip"], pc_data["port"], pc_data["username"], pc_data["password"])
     if pc_status != True:
-        print "[ERROR] Failed to authenticate to PC."
+        print("[ERROR] Failed to authenticate to PC.")
         sys.exit(1)
     blueprint_list = get_bp_list_in_project(pc_data)
     blueprint_names = get_bp_names(blueprint_list)
     if len(blueprint_names) == 0:
-        print "[INFO] No blueprints found in the project."
+        print("[INFO] No blueprints found in the project.")
         sys.exit(0)
     git_update(blueprint_names,account_data,pc_data)

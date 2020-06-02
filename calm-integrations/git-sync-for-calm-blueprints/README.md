@@ -31,7 +31,7 @@ Here is the demo video for how to sync calm blueprints to the git : [Git Sync Ca
     * CALM v2.6+
 
 ## Setup
-* Tested on Centos 7.6 & Python version 2.7.13
+* Tested on Centos 8.0 & Python version 3.6.8
 
 ```mkdir ~/calm-git-upload && cd ~/calm-git-upload
 virtualenv venv
