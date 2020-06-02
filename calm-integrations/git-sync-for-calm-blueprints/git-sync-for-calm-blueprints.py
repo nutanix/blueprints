@@ -154,7 +154,9 @@ def git_update(blueprint_names,account_data,pc_data):
             print("[WARNING] Project directory {} not found in the repository.".format(bp["project"]))
             sys.exit(1)
         print("[INFO] Fetching BP {} details.".format(bp["name"]))
-        blueprint_json = get_content_calm(bp["uuid"], pc_data)
+        blueprint_json_from_calm = json.loads(get_content_calm(bp["uuid"], pc_data)) # convert string received from CALM into JSON object
+        blueprint_json_pp = json.dumps(blueprint_json_from_calm, indent=4, sort_keys=True) # convert JSON object into prettyprinted JSON string
+        blueprint_json = blueprint_json_pp.encode("utf-8") # # encode prettyprinted JSON string into utf-8 for base64 encode
         for file in git_file_list:
             if file["name"] == bp["name"]+".json":
                 old_bp_sha = file["sha"]
