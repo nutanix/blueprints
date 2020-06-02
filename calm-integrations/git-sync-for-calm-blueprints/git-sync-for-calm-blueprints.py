@@ -136,7 +136,7 @@ def get_content_calm(uuid,pc_data):
     port = pc_data["port"]
     username = pc_data["username"]
     password = pc_data["password"]
-    get_bp_url = "https://"+ip+":"+port+"/api/nutanix/v3/blueprints/{}".format(uuid)
+    get_bp_url = "https://"+ip+":"+port+"/api/nutanix/v3/blueprints/{}/export_json".format(uuid)
     headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
     response = requests.get(get_bp_url, auth=HTTPBasicAuth(username, password),
                headers=headers, verify=False)
