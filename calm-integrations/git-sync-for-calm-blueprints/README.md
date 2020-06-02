@@ -36,7 +36,7 @@ Here is the demo video for how to sync calm blueprints to the git : [Git Sync Ca
 ```mkdir ~/calm-git-upload && cd ~/calm-git-upload
 virtualenv venv
 source venv/bin/activate
-pip install requests configparser
+pip install -r requirements.txt
 ```
 
 ## Generate config.ini
