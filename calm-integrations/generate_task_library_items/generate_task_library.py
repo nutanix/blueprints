@@ -1,11 +1,15 @@
 """
 This script is used to create task-library items,
-that can be pushed to pc if ip and creds are passed to the script.
+that can be pushed to pc if ip, creds and project are passed to the script.
 
-This script takes script .sh, .es as input
-files only (.sh for shell scripts & .es for escripts).
+This script takes script .sh, .es, ps1, py as input
+files only (.sh for shell scripts, .es,.py for escripts, ps1 for powershell).
 
-Please pass file name as first argument.
+Pass file name as first argument.
+
+Usage:
+    python generate_task_library.py --pc 10.44.19.140 --user admin --password password --project default --script /root/script.ps1
+
 """
 import os
 import sys
@@ -14,12 +18,6 @@ import ntpath
 import logging
 import argparse
 import requests
-logging.basicConfig(
-        filename='seed_task_library.log',
-        format='%(asctime)s %(levelname)-8s %(message)s',
-        level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
 
 headers = {'content-type': 'application/json', 'Accept': 'application/json'}
 
@@ -93,6 +91,7 @@ def get_project_uuid(base_url, auth, project_name):
 
 
 def seed_task_item(base_url, auth, project_name, path):
+    print("INFO: Path of script '{}'.".format(path))
     script_content = ""
     try:
         scriptf = open(script_path, "r")
@@ -104,8 +103,14 @@ def seed_task_item(base_url, auth, project_name, path):
 
     script_name = ntpath.basename(script_path)
     item_name = os.path.splitext(script_name.replace("_", ' '))[0]
-    script_type = os.path.splitext(script_name)[1].replace('.', '')
+    script_ext = os.path.splitext(script_name)[1].replace('.', '')
     project_uuid = get_project_uuid(base_url, auth, project_name)
+    if 'ps1' in script_ext:
+        script_type = "npsscript"
+    elif 'es' or 'py' in script_ext:
+        script_type = "static"
+    else:
+        script_type = "sh"
 
     payload = {
       "api_version": "3.0",
@@ -130,19 +135,19 @@ def seed_task_item(base_url, auth, project_name, path):
         "description": ""
       }
     }
+    print("INFO: Started Preseeding of task '{}'.".format(item_name))
     url = base_url + "/app_tasks"
     request_payload = payload
-    headers = headers
     response = requests.request(
             "POST",
             url,
             data=json.dumps(request_payload),
             headers=headers,
-            auth=auth,
+            auth=(auth["username"], auth["password"]),
             verify=False
             )
     if response.status_code != 200:
-        print("ERROR: Unable to preseed task library item '{}': {}.".format(
+        print("ERROR: Unable to preseed task '{}': {}.".format(
             item_name, response.content)
             )
         sys.exit(1)
@@ -151,18 +156,18 @@ def seed_task_item(base_url, auth, project_name, path):
             item_name, response.json()["message_list"][0]["message"])
             )
         sys.exit(1)
-    print("INFO: Preseeded task library '{}'.".format(item_name))
+    print("INFO: Preseeded task '{}'.".format(item_name))
 
 
 if __name__ == "__main__":
     parser = help_parser().parse_args()
     pc_ip = parser.pc
     pc_port = parser.port
-    script_path = parser.path
+    script_path = parser.script
     project_name = "default"
     project = parser.project
 
     base_url = "https://{}:{}/api/nutanix/v3".format(pc_ip, str(pc_port))
     auth = {"username": parser.user, "password": parser.password}
 
-    seed_task_item(base_url, auth, project, path)
+    seed_task_item(base_url, auth, project, script_path)
