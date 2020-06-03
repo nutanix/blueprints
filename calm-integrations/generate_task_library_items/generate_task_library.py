@@ -11,65 +11,134 @@ import os
 import sys
 import json
 import ntpath
+import logging
+import argparse
+import requests
+logging.basicConfig(
+        filename='seed_task_library.log',
+        format='%(asctime)s %(levelname)-8s %(message)s',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
 
-script_path = sys.argv[1]
-project_name = "default"
-project_uuid = "7ffa7e0c-0929-41b7-bb30-4dfe836e8435"
+headers = {'content-type': 'application/json', 'Accept': 'application/json'}
 
-script_content = ""
 
-try:
-    scriptf = open(script_path, "r")
-except IOError:
-    print("ERROR: File not found.")
-    sys.exit(1)
-finally:
-    script_content = scriptf.read()
+def help_parser():
+    parser = argparse.ArgumentParser(
+        description='Arguments for seeding task library')
+    parser.add_argument('--pc',
+                        required=True,
+                        action='store',
+                        help='PC to connect to')
+    parser.add_argument('--port',
+                        type=int,
+                        default=9440,
+                        action='store',
+                        help='Port to connect on')
+    parser.add_argument('--user',
+                        required=True,
+                        action='store',
+                        help='User name to use when connecting to pc')
+    parser.add_argument('--password',
+                        required=True,
+                        action='store',
+                        help='Password to use when connecting to pc')
+    parser.add_argument('-p', '--project',
+                        required=True,
+                        action='store',
+                        help='Project to which task library item is created ')
+    parser.add_argument('-s', '--script',
+                        required=True,
+                        action='store',
+                        help='Script path')
+    return parser
+# --------------------------------------------------------------------------------- #
 
-script_name = ntpath.basename(script_path)
-item_name = os.path.splitext(script_name.replace("_", ' '))[0]
-script_type = os.path.splitext(script_name)[1].replace('.', '')
 
-payload = {
-  "api_version": "3.0",
-  "metadata": {
-    "kind": "app_task",
-    "project_reference": {
-      "kind": "project",
-      "name": project_name,
-      "uuid": project_uuid
+def get_project_uuid(base_url, auth, project_name):
+    method = 'POST'
+    url = base_url + "/projects/list"
+    payload = {
+        "length": 100,
+        "offset": 0,
+        "filter": "name=={0}".format(project_name)
     }
-  },
-  "spec": {
-    "name": item_name,
-    "resources": {
-      "variable_list": [],
-      "attrs": {
-        "script": script_content,
-        "script_type": script_type
+    resp = requests.request(
+        method,
+        url,
+        data=json.dumps(payload),
+        headers=headers,
+        auth=(auth["username"], auth["password"]),
+        verify=False
+    )
+
+    if resp.ok:
+        json_resp = resp.json()
+        if json_resp['metadata']['total_matches'] > 0:
+            project = json_resp['entities'][0]
+            project_uuid = project["metadata"]["uuid"]
+            return project_uuid
+        else:
+            logging.error("Could not find project")
+            sys.exit(-1)
+    else:
+        logging.error("Request failed")
+        logging.error("Headers: {}".format(headers))
+        logging.error('Status code: {}'.format(resp.status_code))
+        logging.error('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
+        sys.exit(-1)
+
+# --------------------------------------------------------------------------------- #
+
+
+def seed_task_item(base_url, auth, project_name, path):
+    script_content = ""
+    try:
+        scriptf = open(script_path, "r")
+    except IOError:
+        print("ERROR: File not found.")
+        sys.exit(1)
+    finally:
+        script_content = scriptf.read()
+
+    script_name = ntpath.basename(script_path)
+    item_name = os.path.splitext(script_name.replace("_", ' '))[0]
+    script_type = os.path.splitext(script_name)[1].replace('.', '')
+    project_uuid = get_project_uuid(base_url, auth, project_name)
+
+    payload = {
+      "api_version": "3.0",
+      "metadata": {
+        "kind": "app_task",
+        "project_reference": {
+          "kind": "project",
+          "name": project_name,
+          "uuid": project_uuid
+        }
       },
-      "type": "EXEC"
-    },
-    "description": ""
-  }
-}
-
-pc_ip = "10.0.0.0"
-pc_username = "admin"
-pc_password = "secret"
-
-if pc_ip and pc_username and pc_password:
-    import requests
-
-    url = "https://{}:9440/api/nutanix/v3/app_tasks".format(pc_ip)
+      "spec": {
+        "name": item_name,
+        "resources": {
+          "variable_list": [],
+          "attrs": {
+            "script": script_content,
+            "script_type": script_type
+          },
+          "type": "EXEC"
+        },
+        "description": ""
+      }
+    }
+    url = base_url + "/app_tasks"
     request_payload = payload
-    headers = {'content-type': "application/json"}
+    headers = headers
     response = requests.request(
             "POST",
             url,
             data=json.dumps(request_payload),
             headers=headers,
-            auth=(pc_username, pc_password),
+            auth=auth,
             verify=False
             )
     if response.status_code != 200:
@@ -83,3 +152,17 @@ if pc_ip and pc_username and pc_password:
             )
         sys.exit(1)
     print("INFO: Preseeded task library '{}'.".format(item_name))
+
+
+if __name__ == "__main__":
+    parser = help_parser().parse_args()
+    pc_ip = parser.pc
+    pc_port = parser.port
+    script_path = parser.path
+    project_name = "default"
+    project = parser.project
+
+    base_url = "https://{}:{}/api/nutanix/v3".format(pc_ip, str(pc_port))
+    auth = {"username": parser.user, "password": parser.password}
+
+    seed_task_item(base_url, auth, project, path)
