@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##############################################
-# Usage: bash bash generate_task_library_items.sh
+# Usage: bash generate_task_library_items.sh
 ##############################################
 
 export PYTHONWARNINGS="ignore:Unverified HTTPS request"
@@ -28,7 +28,7 @@ else
    pc_project=${PC_PROJECT}
 fi
 
-Seed nutanix calm published scripts
+#Seed nutanix calm published scripts
 for items in `find  ../../library/task-library -type f -print` ; do
     python generate_task_library.py --pc $pc_ip --user $pc_user --password $pc_password --project $pc_project --script $items
 done

@@ -90,8 +90,8 @@ def get_project_uuid(base_url, auth, project_name):
 # --------------------------------------------------------------------------------- #
 
 
-def seed_task_item(base_url, auth, project_name, path):
-    print("INFO: Path of script '{}'.".format(path))
+def seed_task_item(base_url, auth, project_name, script_path):
+    print("INFO: Path of script '{}'.".format(script_path))
     script_content = ""
     try:
         scriptf = open(script_path, "r")
@@ -156,7 +156,7 @@ def seed_task_item(base_url, auth, project_name, path):
             item_name, response.json()["message_list"][0]["message"])
             )
         sys.exit(1)
-    print("INFO: Preseeded task '{}'.".format(item_name))
+    print("INFO: Finish Preseeding of task '{}'.".format(item_name))
 
 
 if __name__ == "__main__":
