@@ -1,4 +1,4 @@
-i#!/bin/bash
+#!/bin/bash
 set -ex
 
 #Create seperate vg for cassandra storage
