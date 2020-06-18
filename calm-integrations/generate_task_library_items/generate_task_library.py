@@ -8,7 +8,8 @@ files only (.sh for shell scripts, .es,.py for escripts, ps1 for powershell).
 Pass file name as first argument.
 
 Usage:
-    python generate_task_library.py --pc 10.44.19.140 --user admin --password password --project default --script /root/script.ps1
+    python generate_task_library.py --pc 10.44.19.140 --user admin \
+        --password password --project default --script /root/script.ps1
 
 """
 import os
@@ -51,7 +52,7 @@ def help_parser():
                         action='store',
                         help='Script path')
     return parser
-# --------------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
 
 
 def get_project_uuid(base_url, auth, project_name):
@@ -84,10 +85,12 @@ def get_project_uuid(base_url, auth, project_name):
         logging.error("Request failed")
         logging.error("Headers: {}".format(headers))
         logging.error('Status code: {}'.format(resp.status_code))
-        logging.error('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
+        logging.error('Response: {}'
+                      .format(json.dumps(json.loads(resp.content),
+                              indent=4)))
         sys.exit(-1)
 
-# --------------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
 
 
 def seed_task_item(base_url, auth, project_name, script_path):
