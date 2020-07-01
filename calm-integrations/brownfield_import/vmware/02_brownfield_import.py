@@ -68,6 +68,30 @@ BP_SPEC = {
     },
     "spec": {
       "resources": {
+        "service_definition_list": [
+          {
+            "name": "Service1",
+            "depends_on_list": [],
+            "variable_list": [],
+            "port_list": [],
+            "action_list": [],
+            "uuid": "37cc2dc9-da1b-1c2f-d3a7-20b7d5cf365f"
+          }
+        ],
+        "credential_definition_list": [
+        {
+            "name": "TEST",
+            "type": "PASSWORD",
+            "username": "root",
+            "secret": {
+              "attrs": {
+                "is_secret_modified": true
+              },
+              "value": "nutanix/4u"
+            },
+            "uuid": "2bb8197c-f11d-2026-ebaf-a7b3c5090d48"
+          }
+        ],
         "substrate_definition_list": [
           {
             "variable_list": [],
@@ -110,6 +134,92 @@ BP_SPEC = {
         ],
         "client_attrs": {
         },
+        "package_definition_list": [
+          {
+            "type": "DEB",
+            "variable_list": [],
+            "options": {
+              "install_runbook": {
+                "name": "92ca74bb_runbook",
+                "variable_list": [],
+                "main_task_local_reference": {
+                  "kind": "app_task",
+                  "uuid": "d43e8dc6-0fe3-18cf-426e-eab0f9ef8f3b"
+                },
+                "task_definition_list": [
+                  {
+                    "name": "fbaf0c95_dag",
+                    "target_any_local_reference": {
+                      "kind": "app_package",
+                      "uuid": "139e0915-3bfd-f7dd-de96-68da22503290"
+                    },
+                    "variable_list": [],
+                    "child_tasks_local_reference_list": [],
+                    "type": "DAG",
+                    "attrs": {
+                      "edges": []
+                    },
+                    "uuid": "d43e8dc6-0fe3-18cf-426e-eab0f9ef8f3b"
+                  }
+                ],
+                "uuid": "8299be1c-ff93-2246-cf7d-3a7a48c40927"
+              },
+              "uninstall_runbook": {
+                "name": "104819f4_runbook",
+                "variable_list": [],
+                "main_task_local_reference": {
+                  "kind": "app_task",
+                  "uuid": "9b017f12-1253-cf9d-f889-894904bd9a7c"
+                },
+                "task_definition_list": [
+                  {
+                    "name": "04e26f0f_dag",
+                    "target_any_local_reference": {
+                      "kind": "app_package",
+                      "uuid": "139e0915-3bfd-f7dd-de96-68da22503290"
+                    },
+                    "variable_list": [],
+                    "child_tasks_local_reference_list": [
+                      {
+                        "kind": "app_task",
+                        "uuid": "c1457c3e-83f0-561a-3454-b35d1e3f670e"
+                      }
+                    ],
+                    "type": "DAG",
+                    "attrs": {
+                      "edges": []
+                    },
+                    "uuid": "9b017f12-1253-cf9d-f889-894904bd9a7c"
+                  },
+                  {
+                    "name": "Task1",
+                    "target_any_local_reference": {
+                      "kind": "app_service",
+                      "uuid": "37cc2dc9-da1b-1c2f-d3a7-20b7d5cf365f"
+                    },
+                    "variable_list": [],
+                    "child_tasks_local_reference_list": [],
+                    "type": "EXEC",
+                    "attrs": {
+                      "script_type": "static",
+                      "script": "SPEC = {\n  \"spec\": {\n    \"args\": [],\n    \"default_target_reference\": None\n    }\n}\n\nheaders = {'content-type': 'application/json', 'Accept': 'application/json'}\n\ndef find_runbook(base_url, auth, runbook_name):\n    method = 'POST'\n    url = base_url + \"/runbooks/list\"\n    payload = {\"length\":20,\"offset\":0,\"filter\":\"name=={}\".format(runbook_name)}\n    runbook_uuid = None\n    resp = urlreq(\n        url,\n        verb=method,\n        params=json.dumps(payload),\n        headers=headers,\n        auth='BASIC',\n        user=auth[\"username\"],\n        passwd=auth[\"password\"],\n        verify=False\n    )\n    if resp.ok:\n        json_resp = json.loads(resp.content)\n        brownfield_instance_list = []\n        if json_resp['metadata']['total_matches'] > 0:\n            for runbook in json_resp[\"entities\"]:\n                if runbook[\"metadata\"][\"name\"] == runbook_name:\n                    runbook_uuid = runbook[\"metadata\"][\"uuid\"]\n        else:\n            print(\"Could not fetch runbook '{}'.\".format(runbook_name))\n            exit(1)\n        if runbook_uuid != None:\n            print(\"Runbook uuid for '{}' is '{}'.\".format(runbook_name, runbook_uuid))\n            return True, runbook_uuid\n        else:\n            print(\"Failed to fetch uuid for '{}'.\".format(runbook_name))\n            return False, runbook_uuid\n\n    else:\n        print(\"Request to fetch uuid '{}' failed.\".format(runbook_name))\n        print('Status code: {}'.format(resp.status_code))\n        print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))\n        exit(1)\n### --------------------------------------------------------------------------------- ###\n\ndef get_runbook(base_url, auth, runbook_uuid):\n    method = 'GET'\n    url = base_url + \"/runbooks/{}\".format(runbook_uuid)\n    runbook_get = None\n    resp = urlreq(\n        url,\n        verb=method,\n        headers=headers,\n        auth='BASIC',\n        user=auth[\"username\"],\n        passwd=auth[\"password\"],\n        verify=False\n    )\n    if resp.ok:\n        #print resp.content\n        runbook_get = json.loads(resp.content)\n        return runbook_get\n    else:\n        print(\"Failed to get runbook '{}'\".format(runbook_uuid))\n        print('Status code: {}'.format(resp.status_code))\n        print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))\n        exit(1)\n### --------------------------------------------------------------------------------- ###\n\ndef launch_runbook(base_url, auth, runbook_name, runbook_uuid, payload):\n    method = 'POST'\n    url = base_url + \"/runbooks/{}/run\".format(runbook_uuid)\n    payload = payload\n    resp = urlreq(\n        url,\n        verb=method,\n        params=json.dumps(payload),\n        headers=headers,\n        auth='BASIC',\n        user=auth[\"username\"],\n        passwd=auth[\"password\"],\n        verify=False\n    )\n    if resp.ok:\n        json_resp = json.loads(resp.content)\n        return json_resp\n    else:\n        print(\"Failed to launch_runbook '{}' uuid '{}'.\".format(runbook_name, runbook_uuid))\n        print('Status code: {}'.format(resp.status_code))\n        print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))\n        exit(1)\n### --------------------------------------------------------------------------------- ###\n\ndef check_runlog_status(base_url, auth, runlog_uuid):\n    method = 'GET'\n    url = base_url + \"/runbooks/runlogs/{}\".format(runlog_uuid)\n    resp = urlreq(\n        url,\n        verb=method,\n        headers=headers,\n        auth='BASIC',\n        user=auth[\"username\"],\n        passwd=auth[\"password\"],\n        verify=False\n    )\n    if resp.ok:\n        json_resp = json.loads(resp.content)\n        return json_resp\n    else:\n        print(\"Failed to get runlog '{}'.\".format(runlog_uuid))\n        print('Status code: {}'.format(resp.status_code))\n        print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))\n        exit(1)\n### --------------------------------------------------------------------------------- ###\n\npc_ip = \"10.44.19.140\"\npc_port = 9440\nbase_url = \"https://{}:{}/api/nutanix/v3\".format(pc_ip,str(pc_port))\nauth = { \"username\": \"admin\", \"password\": \"Nutanix.123\"}\nrunbook_name = \"EY-Day2Ops\"\nHOSTNAME = \"@@{calm_application_name}@@\"\nstatus, runbook_uuid = find_runbook(base_url, auth, runbook_name)\nif status == False:\n    print(\"Could not fetch uuid for '{}'.\".format(runbook_name))\n\nrunbook_get = get_runbook(base_url, auth, runbook_uuid)\n\n# -*- Building runbook spec.\nSPEC[\"spec\"][\"args\"] = runbook_get[\"spec\"][\"resources\"][\"runbook\"][\"variable_list\"]\nSPEC[\"spec\"][\"default_target_reference\"] = runbook_get[\"spec\"][\"resources\"][\"default_target_reference\"]\n\nSPEC[\"spec\"][\"args\"][0][\"value\"] = HOSTNAME\n\nprint(json.dumps(SPEC))\n\nlaunch_runlog = launch_runbook(base_url, auth, runbook_name, runbook_uuid, SPEC)\nrunlog_uuid = launch_runlog[\"status\"][\"runlog_uuid\"]\n\nstatus = False\nwhile(status == False):\n    runlog_output = check_runlog_status(base_url, auth, runlog_uuid)\n    if runlog_output[\"status\"][\"state\"] == 'SUCCESS':\n        status = True\n        print(\"Runbook '{}' runlog uuid '{}' is '{}'.\".format(runbook_name, runlog_uuid, runlog_output[\"status\"][\"state\"]))\n    elif runlog_output[\"status\"][\"state\"] == 'FAILURE':\n        status = True\n        print(\"Runbook '{}' runlog uuid '{}' has 'FAILED'.\".format(runbook_name, runlog_uuid))\n    else:\n        print(\"Runbook '{}' runlog uuid '{}' is in '{}' state.\".format(runbook_name, runlog_uuid, runlog_output[\"status\"][\"state\"]))\n    sleep(5)\n"
+                    },
+                    "uuid": "c1457c3e-83f0-561a-3454-b35d1e3f670e"
+                  }
+                ],
+                "uuid": "c152b6d7-1577-3311-e366-4f18ddf2bc18"
+              }
+            },
+            "service_local_reference_list": [
+              {
+                "kind": "app_service",
+                "uuid": "37cc2dc9-da1b-1c2f-d3a7-20b7d5cf365f"
+              }
+            ],
+            "name": "Package1",
+            "uuid": "139e0915-3bfd-f7dd-de96-68da22503290"
+          }
+        ],
         "app_profile_list": [
           {
             "name": "VMware",
@@ -136,6 +246,12 @@ BP_SPEC = {
                   "uuid": "61520e7a-67cc-e521-2853-fe249c92de18"
                 },
                 "type": "BROWNFIELD",
+                "package_local_reference_list": [
+                  {
+                    "kind": "app_package",
+                    "uuid": "139e0915-3bfd-f7dd-de96-68da22503290"
+                  }
+                ],
                 "uuid": "48a70045-d71a-4486-0d03-e15a871372b5"
               }
             ],
