@@ -78,20 +78,6 @@ BP_SPEC = {
             "uuid": "37cc2dc9-da1b-1c2f-d3a7-20b7d5cf365f"
           }
         ],
-        "credential_definition_list": [
-        {
-            "name": "TEST",
-            "type": "PASSWORD",
-            "username": "root",
-            "secret": {
-              "attrs": {
-                "is_secret_modified": true
-              },
-              "value": "nutanix/4u"
-            },
-            "uuid": "2bb8197c-f11d-2026-ebaf-a7b3c5090d48"
-          }
-        ],
         "substrate_definition_list": [
           {
             "variable_list": [],
