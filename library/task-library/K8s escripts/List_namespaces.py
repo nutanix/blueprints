@@ -1,7 +1,7 @@
 #script
 
 #Variables used in this script 
-PC_IP=""
+KUBERNETES_CLUSTER_IP=""
 API_KEY=""
 
 import kubernetes.client
@@ -9,7 +9,7 @@ from kubernetes.client.rest import ApiException
 
 # Configure API key authorization: BearerToken
 configuration = kubernetes.client.Configuration()
-configuration.host="https://%s:6443" %(PC_IP)
+configuration.host="https://%s:6443" %(KUBERNETES_CLUSTER_IP)
 configuration.verify_ssl=False
 configuration.api_key['authorization'] = "%s" %(API_KEY)
 configuration.api_key_prefix['authorization'] = 'Bearer'
