@@ -17,7 +17,6 @@ import json
 from calm.common.config import get_config
 
 from calm.common.flags import gflags
-gflags.FLAGS(sys.argv)
 
 from calm.lib.model.store.db import create_db_connection
 from calm.pkg.common.scramble import init_scramble
