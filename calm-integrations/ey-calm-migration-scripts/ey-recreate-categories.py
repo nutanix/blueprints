@@ -13,21 +13,19 @@ import warnings
 import os
 import requests
 import json
-from IPython.frontend.terminal.embed import InteractiveShellEmbed
 
-from calm.common.config import init_config, get_config_dict, get_config
-cfg = init_config()
+from calm.common.config import get_config
 
 from calm.common.flags import gflags
 gflags.FLAGS(sys.argv)
 
 from calm.lib.model.store.db import create_db_connection
 from calm.pkg.common.scramble import init_scramble
-from calm.lib.model.store.db_session import create_session, flush_session, set_session_type
+from calm.lib.model.store.db_session import create_session, set_session_type
 import calm.lib.model as model
 
 warnings.filterwarnings("ignore")
-log = logging.getLogger('cshell')
+log = logging.getLogger('category')
 logging.basicConfig(level=logging.INFO,
                     format="%(message)s",
                     datefmt='%H:%M:%S')
@@ -52,7 +50,8 @@ CATEGORY_KEY_LIST = [
     "OSType",
     "CalmVmUniqueIdentifier",
     "CalmUsername",
-    "account_uuid"
+    "account_uuid",
+    "CalmProject"
 ]
 
 headers = {'content-type': 'application/json', 'Accept': 'application/json'}
@@ -81,10 +80,10 @@ def create_category(base_url, auth, key):
     if resp.ok:
         return True
     else:
-        print("Failed to create category key '{}'.".format(key))
-        print('Status code: {}'.format(resp.status_code))
-        print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-        exit(1)
+        log.info("Failed to create category key '{}'.".format(key))
+        log.info('Status code: {}'.format(resp.status_code))
+        log.info('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
+        raise
 
 def get_category_values(base_url, auth, key, offset):
     method = 'POST'
@@ -106,10 +105,10 @@ def get_category_values(base_url, auth, key, offset):
             category_value_list.append(entity["value"])
         return resp_json["metadata"]["total_matches"], category_value_list
     else:
-        print("Request to get category list for key '{}'.".format(key))
-        print('Status code: {}'.format(resp.status_code))
-        print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-        exit(1)
+        log.info("Request to get category list for key '{}'.".format(key))
+        log.info('Status code: {}'.format(resp.status_code))
+        log.info('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
+        raise
 
 def create_category_value(base_url, auth, key, value):
     method = 'PUT'
@@ -129,24 +128,25 @@ def create_category_value(base_url, auth, key, value):
     if resp.ok:
         return True
     else:
-        print("Failed to create category value '{}' for key '{}'.".format(value, key))
-        print('Status code: {}'.format(resp.status_code))
-        print('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-        exit(1)
+        log.info("Failed to create category value '{}' for key '{}'.".format(value, key))
+        log.info('Status code: {}'.format(resp.status_code))
+        log.info('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
+        raise
 
 def main():
-    for key in CATEGORY_KEY_LIST:
-        offset = 0
-        while True:
-            matches, category_value_list = get_category_values(source_base_url, source_pc_auth, key, offset)
-            for value in category_value_list:
-                #print("key: {} - value: {}".format(key,value))
-                create_category_value(dest_base_url, dest_pc_auth, key, value)
-            offset += LENGTH
-            if (offset > matches):
-                break
-    offset=0
     try:
+        for key in CATEGORY_KEY_LIST:
+            offset = 0
+            while True:
+                matches, category_value_list = get_category_values(source_base_url, source_pc_auth, key, offset)
+                for value in category_value_list:
+                    log.info("Creating key: {} - value: {}".format(key,value))
+                    create_category_value(dest_base_url, dest_pc_auth, key, value)
+                offset += LENGTH
+                if (offset > matches):
+                    break
+
+        offset=0
         init_contexts()
         create_session()
         total_substrates = len(model.NutanixSubstrate.query(deleted=False))
@@ -158,7 +158,7 @@ def main():
                         if key not in CATEGORY_KEY_LIST:
                             create_category(dest_base_url, dest_pc_auth, key)
                         create_category_value(dest_base_url, dest_pc_auth, key, user_category[key])
-                        print("key: {} - value: {}".format(key, user_category[key]))
+                        log.info("Creating key: {} - value: {}".format(key, user_category[key]))
             offset += LENGTH
     except Exception as e:
         log.info("Exception: %s" % e)
