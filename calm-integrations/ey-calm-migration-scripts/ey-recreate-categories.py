@@ -41,7 +41,7 @@ dest_pc_auth = { "username": os.environ['DEST_PC_USER'], "password": os.environ[
 
 user_categories_list = []
 
-CATEGORY_KEY_LIST = [
+SYS_DEFINED_CATEGORY_KEY_LIST = [
     "CalmApplication",
     "CalmDeployment",
     "CalmService",
@@ -49,9 +49,16 @@ CATEGORY_KEY_LIST = [
     "OSType",
     "CalmVmUniqueIdentifier",
     "CalmUsername",
-    "account_uuid",
-    "CalmProject"
+    "account_uuid"
 ]
+
+NON_SYS_DEFINED_CATEGORY_KEY_LIST = [
+    "CalmUsername",
+    "CalmProject",
+    "CalmClusterUuid",
+    "CalmUser"
+]
+
 
 headers = {'content-type': 'application/json', 'Accept': 'application/json'}
 
@@ -134,10 +141,12 @@ def create_category_value(base_url, auth, key, value):
 
 def main():
     try:
-        for key in CATEGORY_KEY_LIST:
+        for key in SYS_DEFINED_CATEGORY_KEY_LIST + NON_SYS_DEFINED_CATEGORY_KEY_LIST:
             offset = 0
             while True:
                 matches, category_value_list = get_category_values(source_base_url, source_pc_auth, key, offset)
+                if key not in SYS_DEFINED_CATEGORY_KEY_LIST:
+                    create_category(dest_base_url, dest_pc_auth, key)
                 for value in category_value_list:
                     log.info("Creating key: {} - value: {}".format(key,value))
                     create_category_value(dest_base_url, dest_pc_auth, key, value)
@@ -154,7 +163,7 @@ def main():
                 if i.spec.categories != "":
                     user_category = json.loads(i.spec.categories)
                     for key in user_category.keys():
-                        if key not in CATEGORY_KEY_LIST:
+                        if key not in SYS_DEFINED_CATEGORY_KEY_LIST:
                             create_category(dest_base_url, dest_pc_auth, key)
                         create_category_value(dest_base_url, dest_pc_auth, key, user_category[key])
                         log.info("Creating key: {} - value: {}".format(key, user_category[key]))
