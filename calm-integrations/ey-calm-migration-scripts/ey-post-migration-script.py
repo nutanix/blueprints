@@ -23,25 +23,24 @@ from calm.pkg.common.scramble import init_scramble
 from calm.lib.model.store.db_session import create_session, set_session_type, flush_session
 import calm.lib.model as model
 
+from helper import change_project
+
 warnings.filterwarnings("ignore")
 log = logging.getLogger('category')
 logging.basicConfig(level=logging.INFO,
                     format="%(message)s",
                     datefmt='%H:%M:%S')
 
-#SOURCE_PC_IP = "10.44.19.70"
-DESTINATION_PC_IP = "10.46.7.50"
+DEST_PC_IP = "10.46.7.50"
 PC_PORT = 9440
 LENGTH = 100
 
-#source_base_url = "https://{}:{}/api/nutanix/v3".format(SOURCE_PC_IP,str(PC_PORT))
-dest_base_url = "https://{}:{}/api/nutanix/v3".format(DESTINATION_PC_IP,str(PC_PORT))
-#source_pc_auth = { "username": os.environ['SOURCE_PC_USER'], "password": os.environ['SOURCE_PC_PASS']}
+dest_base_url = "https://{}:{}/api/nutanix/v3".format(DEST_PC_IP,str(PC_PORT))
 dest_pc_auth = { "username": os.environ['DEST_PC_USER'], "password": os.environ['DEST_PC_PASS']}
 
-dest_account_uuid = "1bf4ea28-fb88-4e53-a179-a9bde68d5f3f"
-dest_cluster_uuid = "0005b1c7-39fa-86b2-4634-ac1f6b611bdc"
-
+#dest_account_uuid = "1bf4ea28-fb88-4e53-a179-a9bde68d5f3f"
+dest_account_uuid = os.environ['DEST_ACCOUNT_UUID']
+dest_project = os.environ['DEST_PROJECT']
 headers = {'content-type': 'application/json', 'Accept': 'application/json'}
 
 def init_contexts():
@@ -113,13 +112,12 @@ def main():
                         print instance_id
                         vm_spec = get_vm(dest_base_url, dest_pc_auth, instance_id)
                         NSE.spec.resources.account_uuid = dest_account_uuid
-                        NSE.spec.resources.cluster_uuid = dest_cluster_uuid
+                        NSE.spec.resources.cluster_uuid = vm_spec["status"]["cluster_reference"]["uuid"]
                         for i in range(len(NSE.spec.resources.nic_list)):
                             NSE.spec.resources.nic_list[i].nic_type = vm_spec["status"]["resources"]["nic_list"][i]["nic_type"]
                             NSE.spec.resources.nic_list[i].subnet_reference = vm_spec["status"]["resources"]["nic_list"][i]["subnet_reference"]
                             NSE.spec.resources.nic_list[i].ip_endpoint_list = vm_spec["status"]["resources"]["nic_list"][i]["ip_endpoint_list"]
                         NSE.save()
-                        flush_session()
                         NS = NSE.replica_group
                         NS.spec.resources.account_uuid = dest_account_uuid
                         for i in range(len(NS.spec.resources.nic_list)):
@@ -127,7 +125,6 @@ def main():
                             NS.spec.resources.nic_list[i].subnet_reference = vm_spec["status"]["resources"]["nic_list"][i]["subnet_reference"]
                             NS.spec.resources.nic_list[i].ip_endpoint_list = vm_spec["status"]["resources"]["nic_list"][i]["ip_endpoint_list"]
                         NS.save()
-                        flush_session()
                         NSC = NS.config
                         NSC.spec.resources.account_uuid = dest_account_uuid
                         for i in range(len(NSC.spec.resources.nic_list)):
@@ -135,7 +132,9 @@ def main():
                             NSC.spec.resources.nic_list[i].subnet_reference = vm_spec["status"]["resources"]["nic_list"][i]["subnet_reference"]
                             NSC.spec.resources.nic_list[i].ip_endpoint_list = vm_spec["status"]["resources"]["nic_list"][i]["ip_endpoint_list"]
                         NSC.save()
-                        flush_session()
+                        app_name = model.Application.get_object(NSE.application_reference).name
+                        change_project(app_name, dest_project)
+                flush_session()
             offset += LENGTH
     except Exception as e:
         log.info("Exception: %s" % e)

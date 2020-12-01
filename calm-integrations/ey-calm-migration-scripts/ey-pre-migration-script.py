@@ -30,12 +30,12 @@ logging.basicConfig(level=logging.INFO,
                     datefmt='%H:%M:%S')
 
 SOURCE_PC_IP = "10.44.19.70"
-DESTINATION_PC_IP = "10.46.7.50"
+DEST_PC_IP = "10.46.7.50"
 PC_PORT = 9440
 LENGTH = 100
 
 source_base_url = "https://{}:{}/api/nutanix/v3".format(SOURCE_PC_IP,str(PC_PORT))
-dest_base_url = "https://{}:{}/api/nutanix/v3".format(DESTINATION_PC_IP,str(PC_PORT))
+dest_base_url = "https://{}:{}/api/nutanix/v3".format(DEST_PC_IP,str(PC_PORT))
 source_pc_auth = { "username": os.environ['SOURCE_PC_USER'], "password": os.environ['SOURCE_PC_PASS']}
 dest_pc_auth = { "username": os.environ['DEST_PC_USER'], "password": os.environ['DEST_PC_PASS']}
 
