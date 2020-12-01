@@ -132,9 +132,9 @@ def main():
                             NSC.spec.resources.nic_list[i].subnet_reference = vm_spec["status"]["resources"]["nic_list"][i]["subnet_reference"]
                             NSC.spec.resources.nic_list[i].ip_endpoint_list = vm_spec["status"]["resources"]["nic_list"][i]["ip_endpoint_list"]
                         NSC.save()
+                        flush_session()
                         app_name = model.Application.get_object(NSE.application_reference).name
                         change_project(app_name, dest_project)
-                flush_session()
             offset += LENGTH
     except Exception as e:
         log.info("Exception: %s" % e)
