@@ -136,17 +136,16 @@ def main():
         log.info("Creating System category values")
 
         for key in SYS_DEFINED_CATEGORY_KEY_LIST + NON_SYS_DEFINED_CATEGORY_KEY_LIST:
+            total_matches = 1
             offset = 0
-            while True:
-                matches, category_value_list = get_category_values(source_base_url, source_pc_auth, key, offset)
+            while offset < total_matches:
+                total_matches, category_value_list = get_category_values(source_base_url, source_pc_auth, key, offset)
                 if key not in SYS_DEFINED_CATEGORY_KEY_LIST:
                     create_category(dest_base_url, dest_pc_auth, key)
                 for value in category_value_list:
                     log.info("Creating key: {} - value: {}".format(key,value))
                     create_category_value(dest_base_url, dest_pc_auth, key, value)
                 offset += LENGTH
-                if (offset > matches):
-                    break
 
         log.info("Creating User categories/values")
 
