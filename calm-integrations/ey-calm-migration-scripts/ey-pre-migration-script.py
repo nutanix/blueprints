@@ -1,38 +1,37 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# TODO- Add authentication
-# TODO- Add skip registration flag
 
-# pylint: disable= E402
-
-import gevent.monkey
-gevent.monkey.patch_all()
-import sys
 import logging
-import warnings
 import os
 import requests
 import json
 
-from calm.common.config import get_config
-
 from calm.common.flags import gflags
 
-from calm.lib.model.store.db import create_db_connection
-from calm.pkg.common.scramble import init_scramble
-from calm.lib.model.store.db_session import create_session, set_session_type
 import calm.lib.model as model
 
-warnings.filterwarnings("ignore")
+from helper import change_project, init_contexts
+
 log = logging.getLogger('category')
 logging.basicConfig(level=logging.INFO,
                     format="%(message)s",
                     datefmt='%H:%M:%S')
 
-SOURCE_PC_IP = "10.44.19.70"
-DEST_PC_IP = "10.46.7.50"
+if 'SOURCE_PC_IP' not in os.environ or 'DEST_PC_IP' not in os.environ:
+    raise Exception("Please export 'SOURCE_PC_IP' & 'DEST_PC_IP'.")
+
+SOURCE_PC_IP = os.environ['SOURCE_PC_IP']
+DEST_PC_IP = os.environ['DEST_PC_IP']
 PC_PORT = 9440
 LENGTH = 100
+
+if (
+    'SOURCE_PC_USER' not in os.environ or
+    'DEST_PC_USER' not in os.environ or
+    'SOURCE_PC_PASS' not in os.environ or
+    'DEST_PC_PASS' not in os.environ
+    ):
+    raise Exception("Please export 'SOURCE_PC_USER', 'DEST_PC_USER', 'SOURCE_PC_PASS' &  'DEST_PC_PASS'.")
 
 source_base_url = "https://{}:{}/api/nutanix/v3".format(SOURCE_PC_IP,str(PC_PORT))
 dest_base_url = "https://{}:{}/api/nutanix/v3".format(DEST_PC_IP,str(PC_PORT))
@@ -62,13 +61,6 @@ NON_SYS_DEFINED_CATEGORY_KEY_LIST = [
 
 headers = {'content-type': 'application/json', 'Accept': 'application/json'}
 
-def init_contexts():
-    cfg = get_config()
-    keyfile = cfg.get('security', 'keyfile')
-    init_scramble(keyfile)
-    set_session_type('green', cfg.get('store', 'flush_parallelisation_factor'), cfg.get('store', 'bulk_size'))
-    create_db_connection(register_entities=False)
-
 def create_category(base_url, auth, key):
     method = 'PUT'
     url = base_url + "/categories/{}".format(key)
@@ -89,7 +81,7 @@ def create_category(base_url, auth, key):
         log.info("Failed to create category key '{}'.".format(key))
         log.info('Status code: {}'.format(resp.status_code))
         log.info('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-        raise
+        raise Exception("Failed to create category key '{}'.".format(key))
 
 def get_category_values(base_url, auth, key, offset):
     method = 'POST'
@@ -114,7 +106,7 @@ def get_category_values(base_url, auth, key, offset):
         log.info("Request to get category list for key '{}'.".format(key))
         log.info('Status code: {}'.format(resp.status_code))
         log.info('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-        raise
+        raise Exception("Request to get category list for key '{}'.".format(key))
 
 def create_category_value(base_url, auth, key, value):
     method = 'PUT'
@@ -137,10 +129,12 @@ def create_category_value(base_url, auth, key, value):
         log.info("Failed to create category value '{}' for key '{}'.".format(value, key))
         log.info('Status code: {}'.format(resp.status_code))
         log.info('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-        raise
+        raise Exception("Failed to create category value '{}' for key '{}'.".format(value, key))
 
 def main():
     try:
+        log.info("Creating System category values")
+
         for key in SYS_DEFINED_CATEGORY_KEY_LIST + NON_SYS_DEFINED_CATEGORY_KEY_LIST:
             offset = 0
             while True:
@@ -154,9 +148,10 @@ def main():
                 if (offset > matches):
                     break
 
+        log.info("Creating User categories/values")
+
         offset=0
         init_contexts()
-        create_session()
         total_substrates = len(model.NutanixSubstrate.query(deleted=False))
         while offset < total_substrates:
             for i in model.NutanixSubstrate.query(deleted=False, length=LENGTH, offset=offset):

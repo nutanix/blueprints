@@ -26,7 +26,7 @@ FLAGS(sys.argv)
 # This is needed as when we import calm models, Flags needs be initialized
 
 
-def __init_contexts():
+def init_contexts():
     """initiate context"""
     cfg = get_config()
     keyfile = cfg.get('security', 'keyfile')
@@ -44,7 +44,7 @@ def change_project(application_name, new_project_name):
     Returns:
         None
     """
-    __init_contexts()
+    init_contexts()
     tenant_uuid = TenantUtils.get_logged_in_tenant()
     project_handle = ProjectUtil()
     app_name = application_name
