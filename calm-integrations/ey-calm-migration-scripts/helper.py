@@ -44,11 +44,12 @@ def change_project(application_name, new_project_name):
     Returns:
         None
     """
-    init_contexts()
     tenant_uuid = TenantUtils.get_logged_in_tenant()
     project_handle = ProjectUtil()
     app_name = application_name
     new_project_name = new_project_name
+
+    app_kind = "app"
 
     # Verify if supplied project name is valid
     project_proto = project_handle.get_project_by_name(new_project_name)
@@ -61,6 +62,12 @@ def change_project(application_name, new_project_name):
     if not apps:
         raise Exception("No app in system with name '{}'".format(app_name))
     app = apps[0]
+
+    entity_cap = EntityCapability(kind_name=app_kind, kind_id=str(app.uuid))
+
+    if entity_cap.project_name == new_project_name:
+        print("Application '{}' is already in same project : '{}'".format(app_name, new_project_name))
+        return
 
     # make sure app contains vms of type AHV or existing machine only
     pe_account_uuids = set()
