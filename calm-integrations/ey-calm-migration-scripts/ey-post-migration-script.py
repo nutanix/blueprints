@@ -81,6 +81,7 @@ def update_substrate_info(vm, dest_account_uuid_map):
             log.info("Updating VM substrate for '{}' with instance_id '{}'.".format(vm_name, instance_id))
             NSE.spec.resources.account_uuid = dest_account_uuid_map[cluster_uuid]
             NSE.spec.resources.cluster_uuid = cluster_uuid
+            NSE.platform_data = json.dumps(vm)
             for i in range(len(NSE.spec.resources.nic_list)):
                 NSE.spec.resources.nic_list[i].nic_type = vm["status"]["resources"]["nic_list"][i]["nic_type"]
                 NSE.spec.resources.nic_list[i].subnet_reference = vm["status"]["resources"]["nic_list"][i]["subnet_reference"]
