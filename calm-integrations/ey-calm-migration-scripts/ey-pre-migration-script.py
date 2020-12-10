@@ -15,6 +15,8 @@ from calm.lib.model.store.db import get_insights_db
 
 from calm.lib.proto import AbacEntityCapability
 
+from calm.common.project_util import ProjectUtil
+
 log = logging.getLogger('category')
 logging.basicConfig(level=logging.INFO,
                     format="%(message)s",
@@ -23,15 +25,17 @@ logging.basicConfig(level=logging.INFO,
 if (
     'DEST_PC_IP' not in os.environ or
     'DEST_PC_USER' not in os.environ or
-    'DEST_PC_PASS' not in os.environ
+    'DEST_PC_PASS' not in os.environ or
+    'SOURCE_PROJECT_NAME' not in os.environ
 ):
-    raise Exception("Please export 'DEST_PC_IP', 'DEST_PC_USER' and  'DEST_PC_PASS'.")
+    raise Exception("Please export 'DEST_PC_IP', 'DEST_PC_USER', 'DEST_PC_PASS' and 'SOURCE_PROJECT_NAME'.")
 
 DEST_PC_IP = os.environ['DEST_PC_IP']
 PC_PORT = 9440
 LENGTH = 100
 DELETED_STATE = 'deleted'
 NUTANIX_VM = 'AHV_VM'
+SOURCE_PROJECT = os.environ['SOURCE_PROJECT_NAME']
 
 dest_base_url = "https://{}:{}/api/nutanix/v3".format(DEST_PC_IP, str(PC_PORT))
 dest_pc_auth = {"username": os.environ['DEST_PC_USER'], "password": os.environ['DEST_PC_PASS']}
@@ -94,12 +98,20 @@ def create_category_value(base_url, auth, key, value):
         log.info('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
         raise Exception("Failed to create category value '{}' for key '{}'.".format(value, key))
 
-def get_application_uuids():
+def get_application_uuids(project_name):
+
+    project_handle = ProjectUtil()
+
+    project_proto = project_handle.get_project_by_name(project_name)
+
+    if not project_proto:
+        raise Exception("No project in system with name '{}'".format(project_name))
+    project_uuid = str(project_proto.uuid)
 
     application_uuid_list = []
 
     db_handle = get_insights_db()
-    applications = db_handle.fetch_many(AbacEntityCapability,kind="app",project_reference="a06a99de-66e6-4151-97bc-0b4d7acb69c8",select=['kind_id', '_created_timestamp_usecs_'])
+    applications = db_handle.fetch_many(AbacEntityCapability,kind="app",project_reference=project_uuid,select=['kind_id', '_created_timestamp_usecs_'])
     for application in applications:
         application_uuid_list.append(application[1][0])
     
@@ -110,7 +122,7 @@ def create_categories():
     log.info("Creating categories/values")
 
     init_contexts()
-    application_uuid_list = get_application_uuids()
+    application_uuid_list = get_application_uuids(SOURCE_PROJECT)
     for app_uuid in application_uuid_list:
         application =  model.Application.get_object(app_uuid)
         if application.state != DELETED_STATE:
