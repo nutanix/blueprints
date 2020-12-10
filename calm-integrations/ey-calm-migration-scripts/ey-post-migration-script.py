@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import logging
 import os
 import requests
 import json
@@ -11,12 +10,8 @@ from calm.common.flags import gflags
 from calm.lib.model.store.db_session import flush_session
 import calm.lib.model as model
 
-from helper import change_project, init_contexts
+from helper import change_project, init_contexts, log
 
-log = logging.getLogger('category')
-logging.basicConfig(level=logging.INFO,
-                    format="%(message)s",
-                    datefmt='%H:%M:%S')
 
 if 'DEST_PC_IP' not in os.environ:
     raise Exception("Please export 'DEST_PC_IP'.")

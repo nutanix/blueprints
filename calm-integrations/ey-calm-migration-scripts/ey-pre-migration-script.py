@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import logging
 import os
 import requests
 import json
@@ -9,18 +8,13 @@ from calm.common.flags import gflags
 
 import calm.lib.model as model
 
-from helper import init_contexts
+from helper import init_contexts, log
 
 from calm.lib.model.store.db import get_insights_db
 
 from calm.lib.proto import AbacEntityCapability
 
 from calm.common.project_util import ProjectUtil
-
-log = logging.getLogger('category')
-logging.basicConfig(level=logging.INFO,
-                    format="%(message)s",
-                    datefmt='%H:%M:%S')
 
 if (
     'DEST_PC_IP' not in os.environ or

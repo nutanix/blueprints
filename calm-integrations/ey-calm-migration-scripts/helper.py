@@ -2,9 +2,9 @@
 
 # -*- coding: utf-8 -*-
 
-import sys
 import requests
 import ujson
+import logging
 
 from aplos.categories.category import Category, CategoryKey
 from aplos.insights.entity_capability import EntityCapability
@@ -19,9 +19,12 @@ from calm.lib.model.store.db import create_db_connection
 from calm.lib.model.store.db_session import create_session, set_session_type
 from calm.pkg.common.scramble import init_scramble
 
+log = logging.getLogger('eylog')
+logging.basicConfig(level=logging.INFO,
+                    format="%(message)s",
+                    datefmt='%H:%M:%S')
+
 init_config()
-FLAGS = gflags.FLAGS
-FLAGS(sys.argv)
 
 # This is needed as when we import calm models, Flags needs be initialized
 
@@ -66,7 +69,7 @@ def change_project(application_name, new_project_name):
     entity_cap = EntityCapability(kind_name=app_kind, kind_id=str(app.uuid))
 
     if entity_cap.project_name == new_project_name:
-        print("Application '{}' is already in same project : '{}'".format(app_name, new_project_name))
+        log.info("Application '{}' is already in same project : '{}'".format(app_name, new_project_name))
         return
 
     # make sure app contains vms of type AHV or existing machine only
@@ -112,7 +115,7 @@ def change_project(application_name, new_project_name):
                            "consider whitelisting all subnets in new project which are white listed in old project".format(nic_uuid, app.name, new_project_name))
                     #raise Exception(msg)
 
-    print "Moving '{}' application to new  project : '{}'".format(app_name, new_project_name)
+    log.info("Moving '{}' application to new  project : '{}'".format(app_name, new_project_name))
 
     # To change ownership of an app to new project, we need to below things
 
@@ -125,12 +128,18 @@ def change_project(application_name, new_project_name):
     # Step 1 to 3 are needed as API's populate project_reference under metadata based Project Category
 
     handle_entity_project_change("app", str(app.uuid), tenant_uuid, new_project_name, new_project_uuid)
-    print "Successfully changed '{}' application's ownership to new project '{}'".format(app_name, new_project_name)
-    print "**" * 30
-    print "Now moving '{}' app's VM to new project '{}'".format(app_name, new_project_name)
+    log.info("Successfully changed '{}' application's ownership to new project '{}'".format(app_name, new_project_name))
+    log.info("**" * 30)
+    log.info("Now moving '{}' app's VM to new project '{}'".format(app_name, new_project_name))
+
+    if app.app_blueprint_config.source_marketplace_name:
+        log.info("Moving Markeplace BP of application '{}' to '{}' project".format(app_name, new_project_name))
+        handle_entity_project_change("blueprint", str(app.app_blueprint_config.uuid), tenant_uuid, new_project_name, new_project_uuid)
+        log.info("Successfully moved Markeplace BP of application '{}' to '{}' project".format(app_name, new_project_name))
+
     if not pc_account_uuid_object_map:
-        print "There are no AHV vm's in the app, hence no vm belonging to this app needs any change"
-        print "Successfully moved '{}' application to  '{}' project ".format(app_name, new_project_name)
+        log.info("There are no AHV vm's in the app, hence no vm belonging to this app needs any change")
+        log.info("Successfully moved '{}' application to  '{}' project ".format(app_name, new_project_name))
         return
 
     # Find out UUIDs of the all the AHV VM's from application
@@ -148,7 +157,7 @@ def change_project(application_name, new_project_name):
         pc_ip = pc_account_obj.data.server
         password = pc_account_obj.data.password.blob
         pc_username = pc_account_obj.data.username
-    print "Application's vms are '{}', is app on remote pc {}".format(vm_uuids, is_app_remote_pc)
+    log.info("Application's vms are '{}', is app on remote pc {}".format(vm_uuids, is_app_remote_pc))
 
     # Change ownership of all vm's to New project
     # Same step mentioned for app need to follow for vm
@@ -161,12 +170,12 @@ def change_project(application_name, new_project_name):
         # see CalmProject, hence there is no need to update CalmProject category value
         if is_app_remote_pc:
             update_vm_in_remote_pc(pc_ip, pc_username, password, vm_uuid, new_project_name)
-            print "Successfully updated remote pc  '{}' vm's categories to hold new project name".format(vm_uuid)
+            log.info("Successfully updated remote pc  '{}' vm's categories to hold new project name".format(vm_uuid))
         else:
             handle_entity_project_change("vm", vm_uuid, tenant_uuid, new_project_name, new_project_uuid)
-            print "Successfully moved '{}' vm which is part of '{}' application to new project '{}'".format(vm_uuid, app_name, new_project_name)
-    print "Successfully moved all vm's of '{}' application to '{}' project".format(app_name, new_project_name)
-    print "Successfully moved '{}' application to  '{}' project ".format(app_name, new_project_name)
+            log.info("Successfully moved '{}' vm which is part of '{}' application to new project '{}'".format(vm_uuid, app_name, new_project_name))
+    log.info("Successfully moved all vm's of '{}' application to '{}' project".format(app_name, new_project_name))
+    log.info("Successfully moved '{}' application to  '{}' project ".format(app_name, new_project_name))
 
 
 def handle_entity_project_change(entity_kind, entity_uuid, tenant_uuid, new_project_name, new_project_uuid):
@@ -222,18 +231,18 @@ def update_vm_in_remote_pc(pc_ip, pc_username, pc_password, vm_uuid, new_project
     category_url = "https://{}:9440/api/nutanix/v3/categories/CalmProject/{}".format(pc_ip, new_project_name)
     response = requests.get(category_url, auth=auth, headers=headers, verify=False)
     if response.status_code == 404:
-        print "Needed category (key: value) ({}, {}) does not exist on remote PC, need to create one".format("CalmProject", new_project_name)
+        log.info("Needed category (key: value) ({}, {}) does not exist on remote PC, need to create one".format("CalmProject", new_project_name))
         category_create_paylod = {"description": "Created by CALM", "value": new_project_name}
         response = requests.put(category_url, auth=auth, data=ujson.dumps(category_create_paylod), headers=headers, verify=False)
         if response.status_code not in [200, 202]:
-            print "Response status code {}, respnse content {}".format(response.status_code, response.content)
+            log.info("Response status code {}, respnse content {}".format(response.status_code, response.content))
             raise Exception("Failed to create category, please contact Nutanix-calm team")
 
     vm_api_url = "https://{}:9440/api/nutanix/v3/vms/{}".format(pc_ip, vm_uuid)
-    print "VM GET URL: '{}'".format(vm_api_url)
+    log.info("VM GET URL: '{}'".format(vm_api_url))
     response = requests.get(vm_api_url, auth=auth, headers=headers, verify=False)
     if response.status_code not in [200, 202]:
-        print "Response status code {}, respnse content {}".format(response.status_code, response.content)
+        log.info("Response status code {}, respnse content {}".format(response.status_code, response.content))
         raise Exception("Failed to get VM from a remote PC, please contact Nutanix-calm team")
     vm_get_response_str = response.content
     vm_get_response = ujson.loads(vm_get_response_str)
@@ -242,7 +251,7 @@ def update_vm_in_remote_pc(pc_ip, pc_username, pc_password, vm_uuid, new_project
     categories['CalmProject'] = new_project_name
     response = requests.put(vm_api_url, auth=auth, data=ujson.dumps(vm_get_response), headers=headers, verify=False)
     if response.status_code not in [200, 202]:
-        print "Response status code {}, respnse content {}".format(response.status_code, response.content)
+        log.info("Response status code {}, respnse content {}".format(response.status_code, response.content))
         raise Exception("Failed to update VM on remote PC, please contact Nutanix-calm team")
 
 
@@ -259,7 +268,7 @@ def get_or_create_category(name, value, tenant_uuid):
     category_obj = Category()
     category_obj.lookup_category_by_name_value(name, value)
     if hasattr(category_obj, "value") and category_obj.value == value:
-        print "category with name '{}' and value '{}', already exists , hence no need to create".format(name, value)
+        log.info("category with name '{}' and value '{}', already exists , hence no need to create".format(name, value))
         return category_obj
     category_obj.tenant_uuid = tenant_uuid
     category_obj.initialize(name, value, "Created by CALM", None, True)
