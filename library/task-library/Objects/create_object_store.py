@@ -7,9 +7,9 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-pcip = "10.135.20.2"
+pcip = "10.0.0.1"
 USER_NAME = "admin"
-PASSWORD = "Nutanix@123"
+PASSWORD = "xxxxxxxx"
 
 BASE_URL = "https://"+pcip+":9440"
 
@@ -148,7 +148,6 @@ def main():
     }
     json_resp, resp = _do_post(_url(create_path), create_payload)
     oss_uuid = json_resp["metadata"]["uuid"]
-    #oss_uuid = "017bf260-8161-4985-636a-02353fd13d61"
 
     status_path = "/oss/api/nutanix/v3/objectstores/{}".format(oss_uuid)
     objects_create_pending = True

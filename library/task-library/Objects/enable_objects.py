@@ -7,9 +7,9 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-pcip = "10.44.19.70"
+pcip = "10.0.0.1"
 USER_NAME = "admin"
-PASSWORD = "Nutanix.123"
+PASSWORD = "xxxxxxxx"
 
 BASE_URL = "https://"+pcip+":9440"
 
