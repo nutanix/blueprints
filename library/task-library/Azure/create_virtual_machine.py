@@ -23,7 +23,7 @@ NIC_NAME = VM_NAME + "-nic"
 PUBLIC_IP_ADDRESS_NAME = VM_NAME + "-public-ip"
 
 LOGIN_USERNAME = "centos"
-LOGIN_PASSWORD = "nutanix/4u"
+LOGIN_PASSWORD = "xxxxxxxx"
 
 VM_REFERENCE = {
     'linux': {
