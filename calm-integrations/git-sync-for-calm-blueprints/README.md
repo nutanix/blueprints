@@ -62,12 +62,12 @@ password = <git_password>
 export PYTHONWARNINGS="ignore:Unverified HTTPS request"
 # Activate virtual environment
 source venv/bin/activate
-python git-version-management.py
+python git-sync-for-calm-blueprints.py
 ```
 
 ## Sample Output:
 ```
-(venv) skumar-blr-mbp:git-bp-upload sarat.kumar$ python git-version-management.py
+(venv) skumar-blr-mbp:git-bp-upload sarat.kumar$ python git-sync-for-calm-blueprints.py
 Fetching BP LabSessions details.
 Updating BP LabSessions.
 Fetching BP vm_cloudinit details.
