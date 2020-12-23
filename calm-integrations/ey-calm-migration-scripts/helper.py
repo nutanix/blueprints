@@ -178,6 +178,67 @@ def change_project(application_name, new_project_name):
     log.info("Successfully moved '{}' application to  '{}' project ".format(app_name, new_project_name))
 
 
+def change_project_vmware(application_name, new_project_name):
+    """
+    change_project method for the file
+    Raises:
+        Exception: when command line args are not exepcted
+    Returns:
+        None
+    """
+    tenant_uuid = TenantUtils.get_logged_in_tenant()
+    project_handle = ProjectUtil()
+    app_name = application_name
+    new_project_name = new_project_name
+
+    app_kind = "app"
+
+    # Verify if supplied project name is valid
+    project_proto = project_handle.get_project_by_name(new_project_name)
+    if not project_proto:
+        raise Exception("No project in system with name '{}'".format(new_project_name))
+    new_project_uuid = str(project_proto.uuid)
+
+    # Verify if supplied application name is valid
+    apps = Application.query(name=app_name, deleted=False)
+    if not apps:
+        raise Exception("No app in system with name '{}'".format(app_name))
+    app = apps[0]
+
+    entity_cap = EntityCapability(kind_name=app_kind, kind_id=str(app.uuid))
+
+    if entity_cap.project_name == new_project_name:
+        log.info("Application '{}' is already in same project : '{}'".format(app_name, new_project_name))
+        return
+
+    log.info("Moving '{}' application to new  project : '{}'".format(app_name, new_project_name))
+
+
+    handle_entity_project_change("app", str(app.uuid), tenant_uuid, new_project_name, new_project_uuid)
+    log.info("Successfully changed '{}' application's ownership to new project '{}'".format(app_name, new_project_name))
+    log.info("**" * 30)
+    log.info("Now moving '{}' app's VM to new project '{}'".format(app_name, new_project_name))
+
+    if app.app_blueprint_config.source_marketplace_name:
+        log.info("Moving Markeplace BP of application '{}' to '{}' project".format(app_name, new_project_name))
+        handle_entity_project_change("blueprint", str(app.app_blueprint_config.uuid), tenant_uuid, new_project_name, new_project_uuid)
+        log.info("Successfully moved Markeplace BP of application '{}' to '{}' project".format(app_name, new_project_name))
+
+    # Find out UUIDs of the all the AHV VM's from application
+    vm_uuids = []
+    for deploy in app.active_app_profile_instance.deployments:
+        for de in deploy.elements:
+            sub_el = de.substrate_element
+            if sub_el.type == "VMWARE_VM":
+                vm_uuids.append(str(sub_el.instance_id))
+    # Change ownership of all vm's to New project
+    # Same step mentioned for app need to follow for vm
+    for vm_uuid in vm_uuids:
+        handle_entity_project_change("vm", vm_uuid, tenant_uuid, new_project_name, new_project_uuid)
+        log.info("Successfully moved '{}' vm which is part of '{}' application to new project '{}'".format(vm_uuid, app_name, new_project_name))
+    log.info("Successfully moved all vm's of '{}' application to '{}' project".format(app_name, new_project_name))
+    log.info("Successfully moved '{}' application to  '{}' project ".format(app_name, new_project_name))
+
 def handle_entity_project_change(entity_kind, entity_uuid, tenant_uuid, new_project_name, new_project_uuid):
     """
     Handles entity project change
