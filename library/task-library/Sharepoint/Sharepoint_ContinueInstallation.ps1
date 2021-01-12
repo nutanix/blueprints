@@ -47,7 +47,7 @@ echo '
 
 
 $Username = "Administrator"  
-$Password = ConvertTo-SecureString ‘nutanix/4u’ -AsPlainText -Force
+$Password = ConvertTo-SecureString 'xxxxxxx' -AsPlainText -Force
 $adminCredential = New-Object System.Management.Automation.PSCredential $Username, $Password
 $Session = New-PSSession  -Credential $adminCredential
 
