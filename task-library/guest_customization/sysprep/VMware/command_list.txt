@@ -1,9 +1,4 @@
 cmd.exe /c winrm quickconfig -q
-cmd.exe /c winrm set winrm/config/service/auth @{Basic="true"}
-cmd.exe /c winrm set winrm/config/service @{AllowUnencrypted="true"}
 powershell -Command "enable-psremoting -Force"
 powershell -Command "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force"
-cmd.exe /c winrm set winrm/config/client/auth @{Basic="true"}
-cmd.exe /c winrm set winrm/config/client @{AllowUnencrypted="true"}
-powershell -Command "Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False"
 
