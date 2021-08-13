@@ -1,4 +1,10 @@
 #!/usr/bin/python
+##############################################
+# Name        : AHV.py
+# Author      : Calm Devops
+# Version     : 1.0
+# Description : Script will list all VMs available in a PC and update a VM
+##############################################
 import requests
 import json
 import re
@@ -173,3 +179,9 @@ def update_vm(name):
   path = "/vms/"+uuid
   _do_put(_url(path),vm)
 
+def delete_vm(name):
+  vm = get_vm_by_name(name)
+  uuid = vm['metadata']['uuid']
+  print(uuid)
+  path = "/vms/"+uuid
+  _do_delete(_url(path))
