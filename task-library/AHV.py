@@ -18,6 +18,8 @@ class RestUtilException(Exception):
     pass
 
 def _wrap(resp):
+    """This function returns json resp if HTTP response is 200 and 
+    it accepts session objects function output"""
     if resp.status_code == 200 :
         try:
            return resp.json()
@@ -33,6 +35,8 @@ def _wrap(resp):
             raise RestUtilException("Rest API request failed : %s" % resp.reason)
 
 def _do_get(url, cookies=None, params=None, auth=None, timeout=120):
+    """This function is used to make requests.session.get HTTP call.
+    This function further sends HTTP call response object to wrap function to get json in return"""
     try:
         session = RestUtil(BASE_URL).get_session()
         headers = {'Content-Type': 'application/json'}
@@ -51,6 +55,8 @@ def _do_get(url, cookies=None, params=None, auth=None, timeout=120):
         raise
 
 def _do_post(url,params=None, cookies=None,auth=None, timeout=120):
+     """This function is used to make requests.session.post HTTP call.
+    This function further sends HTTP call response object to wrap function to get json in return"""
     try:
         session = RestUtil(BASE_URL).get_session()
         headers = {'Content-Type': 'application/json'}
@@ -69,6 +75,8 @@ def _do_post(url,params=None, cookies=None,auth=None, timeout=120):
         raise
 
 def _do_put(url, params=None, auth=None, timeout=120):
+     """This function is used to make requests.session.put HTTP call.
+    This function further sends HTTP call response object to wrap function to get json in return"""
     try:
         session = RestUtil(BASE_URL).get_session()
         headers = {'Content-Type': 'application/json'}
@@ -86,6 +94,8 @@ def _do_put(url, params=None, auth=None, timeout=120):
         raise
 
 def _do_delete(url, params=None, auth=None, timeout=120):
+     """This function is used to make requests.session.delete HTTP call.
+    This function further sends HTTP call response object to wrap function to get json in return"""
     try:
         session = RestUtil(BASE_URL).get_session()
         headers = {'Content-Type': 'application/json'}
@@ -142,6 +152,7 @@ PASSWORD="<Password>"
 BASE_URL="https://"+pcip+":9440"
 
 def get_cluster_uuid_by_name(name):
+  """This function can be used to retrieve cluster uuid by passing name of cluster as an argument"""
   path = "/clusters/list"
   enable_payload = {"kind":"cluster","sort_attribute": "string","length": 1000,"sort_order":"ASCENDING", "offset": 0 }
   json_resp,resp = _do_post(_url(path),enable_payload)
@@ -151,6 +162,7 @@ def get_cluster_uuid_by_name(name):
     return cluster_details
 
 def get_image_uuid_by_name(name):
+  """This function can be used to retrieve image uuid by passing name of the image  as an argument"""
   path = "/images/list"
   enable_payload = {"kind":"image","sort_attribute": "string","length": 1000,"sort_order":"ASCENDING", "offset": 0 }
   json_resp,resp = _do_post(_url(path),enable_payload)
@@ -159,12 +171,14 @@ def get_image_uuid_by_name(name):
     return image[0]
 
 def get_vm_by_name(name):
+  """This function can be used to get vm spec by passing vm name as an argument"""
   json_resp = vm_list()
   vm = [ i for i in json_resp['entities'] if i['spec']['name'] == name ]
   if len(vm) != 0:
     return vm[0]
 
 def vm_list():
+  """This function can be used to get spec of all the vms present on pc"""
   path = "/vms/list"
   enable_payload = {"kind":"vm","sort_attribute": "string","length": 1000,"sort_order":"ASCENDING", "offset": 0 }
   json_resp,resp = _do_post(_url(path),enable_payload)
