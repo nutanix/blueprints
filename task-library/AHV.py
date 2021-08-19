@@ -55,7 +55,7 @@ def _do_get(url, cookies=None, params=None, auth=None, timeout=120):
         raise
 
 def _do_post(url,params=None, cookies=None,auth=None, timeout=120):
-     """This function is used to make requests.session.post HTTP call.
+    """This function is used to make requests.session.post HTTP call.
     This function further sends HTTP call response object to wrap function to get json in return"""
     try:
         session = RestUtil(BASE_URL).get_session()
@@ -75,7 +75,7 @@ def _do_post(url,params=None, cookies=None,auth=None, timeout=120):
         raise
 
 def _do_put(url, params=None, auth=None, timeout=120):
-     """This function is used to make requests.session.put HTTP call.
+    """This function is used to make requests.session.put HTTP call.
     This function further sends HTTP call response object to wrap function to get json in return"""
     try:
         session = RestUtil(BASE_URL).get_session()
@@ -94,7 +94,7 @@ def _do_put(url, params=None, auth=None, timeout=120):
         raise
 
 def _do_delete(url, params=None, auth=None, timeout=120):
-     """This function is used to make requests.session.delete HTTP call.
+    """This function is used to make requests.session.delete HTTP call.
     This function further sends HTTP call response object to wrap function to get json in return"""
     try:
         session = RestUtil(BASE_URL).get_session()
@@ -185,6 +185,8 @@ def vm_list():
   return json_resp
 
 def update_vm(name):
+  """This function retrieves vm spec using get_vm_by_name function, updates spec and
+  then calls requests.session.put to update spec of vm"""
   vm = get_vm_by_name(name)
   del vm['status']
   vm['spec']['resources']['memory_size_mib'] = 1024*3
@@ -194,6 +196,7 @@ def update_vm(name):
   _do_put(_url(path),vm)
 
 def delete_vm(name):
+  """This function can be used to delete vm by passing vm name as an argument"""
   vm = get_vm_by_name(name)
   uuid = vm['metadata']['uuid']
   print(uuid)
