@@ -7,6 +7,8 @@ This script helps customers to relink Calm App to UVM in DR site or vice-versa.
 
 - `pre-migration-script.py` Script takes 'DEST_PC_IP', 'DEST_PC_USER', 'DEST_PC_PASS' & 'SOURCE_PROJECT_NAME' variables exported as env variables to recreate categories at DR site.
 - `post-migration-script.py` Script takes 'DEST_PC_IP', 'DEST_PC_USER', 'DEST_PC_PASS' & 'DEST_PROJECT_NAME' variables exported to re-link Apps with Failover VM's and update APP's project.
+- `helper.py` Just a helper file. Please don't execute this.
+
 
 ## Inputs
 * export DEST_PROJECT_NAME="<DEST_PROJECT_NAME>"
@@ -23,7 +25,7 @@ docker exec -it nucalm bash
 cd /tmp
 activate
 
-# Copy both the files 'pre-migration-script.py' & 'post-migration-script.py'
+# Copy both the files 'helper.py', 'pre-migration-script.py' & 'post-migration-script.py'
 
 # export required variables
 export DEST_PROJECT_NAME="<DEST_PROJECT_NAME>"
