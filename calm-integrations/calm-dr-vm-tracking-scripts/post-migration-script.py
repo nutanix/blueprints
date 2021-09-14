@@ -4,6 +4,7 @@
 import os
 import requests
 import json
+import ujson
 
 from calm.common.flags import gflags
 
@@ -36,7 +37,7 @@ headers = {'content-type': 'application/json', 'Accept': 'application/json'}
 def get_vm(base_url, auth, uuid):
     method = 'GET'
     url = base_url + "/vms/{0}".format(uuid)
- 
+
     resp = requests.request(
             method,
             url,
@@ -128,6 +129,50 @@ def update_substrate_info(vm_uuid, vm, dest_account_uuid_map, vm_uuid_map):
         clone_bp.intent_spec = json.dumps(clone_bp_intent_spec_dict)
         clone_bp.save()
 
+        # update patch config action if there is any
+        vm_first_nic_subnet_uuid = ""
+        if len(vm["status"]["resources"]["nic_list"]) >= 0:
+            vm_first_nic_subnet_uuid = vm["status"]["resources"]["nic_list"][0]["subnet_reference"]["uuid"]
+        for patch in application.active_app_profile_instance.patches:
+            patch_attr_list = patch.attrs_list[0]
+            patch_data = patch_attr_list.data
+            for i in range(len(patch_data.pre_defined_nic_list)):
+
+                # operation as add indicates that nic will get added as part of patch action run,
+                # with VM moving from PC1 to PC2 we are not sure which nic user want to add as part of update
+                # hence just add 1st nic of vm
+                if patch_data.pre_defined_nic_list[i].operation == "add":
+                    patch_data.pre_defined_nic_list[i].subnet_reference.uuid=vm_first_nic_subnet_uuid
+                else:
+                    # use correponding index from vm nic list if its available else use 1st nic
+                    if len(vm["status"]["resources"]["nic_list"]) >= i + 1:
+                        patch_data.pre_defined_nic_list[i].subnet_reference.uuid=vm["status"]["resources"]["nic_list"][i]["subnet_reference"]["uuid"]
+                    else:
+                        patch_data.pre_defined_nic_list[i].subnet_reference.uuid = vm_first_nic_subnet_uuid
+            patch.save()
+            application.active_app_profile_instance.save()
+            application.save()
+        app_intent_spec = application.active_app_profile_instance.intent_spec
+        app_intent_spec_dict = ujson.loads(app_intent_spec)
+        for patch in ["resources"]["patch_list"]:
+            patch_data = ["attrs_list"][0]["data"]
+            for i in range(len(patch_data["pre_defined_nic_list"])):
+
+                  # operation as add indicates that nic will get added as part of patch action run,
+                  # with VM moving from PC1 to PC2 we are not sure which nic user want to add as part of update
+                  # hence just add 1st nic of vm
+                  if patch_data["pre_defined_nic_list"][i]["operation"] == "add":
+                      patch_data["pre_defined_nic_list"][i]["subnet_reference"]["uuid"]=vm_first_nic_subnet_uuid
+                  else:
+                      # use correponding index from vm nic list if its available else use 1st nic
+                      if len(vm["status"]["resources"]["nic_list"]) >= i + 1:
+                          patch_data["pre_defined_nic_list"][i]["subnet_reference"]["uuid"]=vm["status"]["resources"]["nic_list"][i]["subnet_reference"]["uuid"]
+                      else:
+                          patch_data["pre_defined_nic_list"][i]["subnet_reference"]["uuid"] = vm_first_nic_subnet_uuid
+        application.active_app_profile_instance.intent_spec = ujson.dumps(app_intent_spec_dict)
+        application.active_app_profile_instance.save()
+        application.save()
+
 def update_substrates(vm_uuid_map):
 
     dest_account_uuid_map = get_account_uuid_map()
@@ -144,7 +189,7 @@ def update_substrates(vm_uuid_map):
 
 def update_app_project(vm_uuid_map):
     app_names = set()
-    
+
     for instance_id in vm_uuid_map.keys():
         NSE = model.NutanixSubstrateElement.query(instance_id=vm_uuid_map[instance_id], deleted=False)
         if NSE:
@@ -205,7 +250,7 @@ def get_vm_source_dest_uuid_map():
         entities, total_matches = get_recovery_plan_jobs_list(dest_base_url, dest_pc_auth, offset)
         for entity in entities:
             if (
-                entity["status"]["resources"]["execution_parameters"]["action_type"] == "FAILOVER" and 
+                entity["status"]["resources"]["execution_parameters"]["action_type"] == "FAILOVER" and
                 (
                     entity["status"]["execution_status"]["status"] == "COMPLETED" or
                     entity["status"]["execution_status"]["status"] == "COMPLETED_WITH_WARNING"
@@ -234,7 +279,7 @@ def get_vm_source_dest_uuid_map():
 
 def main():
     try:
-        
+
         vm_uuid_map = get_vm_source_dest_uuid_map()
 
         init_contexts()
