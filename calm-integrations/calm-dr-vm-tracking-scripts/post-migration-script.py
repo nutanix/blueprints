@@ -5,6 +5,7 @@ import os
 import requests
 import json
 import ujson
+import copy
 
 from calm.common.flags import gflags
 
@@ -37,7 +38,6 @@ headers = {'content-type': 'application/json', 'Accept': 'application/json'}
 def get_vm(base_url, auth, uuid):
     method = 'GET'
     url = base_url + "/vms/{0}".format(uuid)
-
     resp = requests.request(
             method,
             url,
@@ -76,7 +76,7 @@ def update_substrate_info(vm_uuid, vm, dest_account_uuid_map, vm_uuid_map):
 
         log.info("Updating VM substrate element for '{}' with instance_id '{}'.".format(vm_name, instance_id))
         if instance_id != vm_uuid_map[instance_id]:
-            log.info("Updating 'instance_id' from '{}' to '{}'.".format(vm_name, instance_id, vm_uuid_map[instance_id]))
+            log.info("Updating instance_id of '{}' from '{}' to '{}'.".format(vm_name, instance_id, vm_uuid_map[instance_id]))
             NSE.instance_id = vm_uuid_map[instance_id]
             instance_id = vm_uuid_map[instance_id]
 
@@ -86,7 +86,16 @@ def update_substrate_info(vm_uuid, vm, dest_account_uuid_map, vm_uuid_map):
         for i in range(len(NSE.spec.resources.nic_list)):
             NSE.spec.resources.nic_list[i].nic_type = vm["status"]["resources"]["nic_list"][i]["nic_type"]
             NSE.spec.resources.nic_list[i].subnet_reference = vm["status"]["resources"]["nic_list"][i]["subnet_reference"]
-            NSE.spec.resources.nic_list[i].ip_endpoint_list = vm["status"]["resources"]["nic_list"][i]["ip_endpoint_list"]
+            NSE.spec.resources.nic_list[i].ip_endpoint_list = vm["spec"]["resources"]["nic_list"][i]["ip_endpoint_list"]
+        for i in range(len(NSE.spec.resources.disk_list)):
+            NSE.spec.resources.disk_list[i].device_properties = vm["spec"]["resources"]["disk_list"][i]["device_properties"]
+            NSE.spec.resources.disk_list[i].disk_size_mib = vm["spec"]["resources"]["disk_list"][i]["disk_size_mib"]
+            #NSE.spec.resources.disk_list[i].storage_config = vm["spec"]["resources"]["disk_list"][i]["storage_config"]
+            if NSE.spec.resources.disk_list[i].data_source_reference:
+                if "data_source_reference" in vm["spec"]["resources"]["disk_list"][i]:
+                    NSE.spec.resources.disk_list[i].data_source_reference = vm["spec"]["resources"]["disk_list"][i]["data_source_reference"]
+                else:
+                    NSE.spec.resources.disk_list[i].data_source_reference = None
         NSE.save()
 
         log.info("Updating VM substrate for '{}' with instance_id '{}'.".format(vm_name, instance_id))
@@ -95,7 +104,16 @@ def update_substrate_info(vm_uuid, vm, dest_account_uuid_map, vm_uuid_map):
         for i in range(len(NS.spec.resources.nic_list)):
             NS.spec.resources.nic_list[i].nic_type = vm["status"]["resources"]["nic_list"][i]["nic_type"]
             NS.spec.resources.nic_list[i].subnet_reference = vm["status"]["resources"]["nic_list"][i]["subnet_reference"]
-            NS.spec.resources.nic_list[i].ip_endpoint_list = vm["status"]["resources"]["nic_list"][i]["ip_endpoint_list"]
+            NS.spec.resources.nic_list[i].ip_endpoint_list = vm["spec"]["resources"]["nic_list"][i]["ip_endpoint_list"]
+        #for i in range(len(NS.spec.resources.disk_list)):
+        #    NS.spec.resources.disk_list[i].device_properties = vm["spec"]["resources"]["disk_list"][i]["device_properties"]
+        ##    NS.spec.resources.disk_list[i].disk_size_mib = vm["spec"]["resources"]["disk_list"][i]["disk_size_mib"]
+        #    NS.spec.resources.disk_list[i].storage_config = vm["spec"]["resources"]["disk_list"][i]["storage_config"]
+        #    if NS.spec.resources.disk_list[i].data_source_reference:
+        #        if "data_source_reference" in vm["spec"]["resources"]["disk_list"][i]:
+        #            NS.spec.resources.disk_list[i].data_source_reference = vm["spec"]["resources"]["disk_list"][i]["data_source_reference"]
+        #        else:
+        #            NS.spec.resources.disk_list[i].data_source_reference = None
 
         log.info("Updating 'create_Action' under substrate for '{}' with instance_id '{}'.".format(vm_name, instance_id))
         for action in NS.actions:
@@ -104,6 +122,7 @@ def update_substrate_info(vm_uuid, vm, dest_account_uuid_map, vm_uuid_map):
                     if task.type == "PROVISION_NUTANIX":
                         for i, nic in enumerate(task.attrs.resources.nic_list):
                             nic.subnet_reference.uuid = vm["status"]["resources"]["nic_list"][i]["subnet_reference"]["uuid"]
+                        # TODO: Update image_uuid here
                     task.save()
         NS.save()
 
@@ -113,7 +132,31 @@ def update_substrate_info(vm_uuid, vm, dest_account_uuid_map, vm_uuid_map):
         for i in range(len(NSC.spec.resources.nic_list)):
             NSC.spec.resources.nic_list[i].nic_type = vm["status"]["resources"]["nic_list"][i]["nic_type"]
             NSC.spec.resources.nic_list[i].subnet_reference = vm["status"]["resources"]["nic_list"][i]["subnet_reference"]
-            NSC.spec.resources.nic_list[i].ip_endpoint_list = vm["status"]["resources"]["nic_list"][i]["ip_endpoint_list"]
+            NSC.spec.resources.nic_list[i].ip_endpoint_list = vm["spec"]["resources"]["nic_list"][i]["ip_endpoint_list"]
+        for i in range(len(NSC.spec.resources.disk_list)):
+            NSC.spec.resources.disk_list[i].device_properties = vm["spec"]["resources"]["disk_list"][i]["device_properties"]
+            NSC.spec.resources.disk_list[i].disk_size_mib = vm["spec"]["resources"]["disk_list"][i]["disk_size_mib"]
+            #NSC.spec.resources.disk_list[i].storage_config = vm["spec"]["resources"]["disk_list"][i]["storage_config"]
+            if NSC.spec.resources.disk_list[i].data_source_reference:
+                if "data_source_reference" in vm["spec"]["resources"]["disk_list"][i]:
+                    NSC.spec.resources.disk_list[i].data_source_reference = vm["spec"]["resources"]["disk_list"][i]["data_source_reference"]
+                else:
+                    NSC.spec.resources.disk_list[i].data_source_reference = None
+        if len(vm["spec"]["resources"]["disk_list"]) > len(NSC.spec.resources.disk_list):
+            diff_length = len(vm["spec"]["resources"]["disk_list"]) - len(NSC.spec.resources.disk_list)
+            diff_disk_list = vm["spec"]["resources"]["disk_list"][-diff_length:]
+            ref_disk = copy.deepcopy(NSC.spec.resources.disk_list[0])
+            for disk in diff_disk_list:
+                ref_disk.device_properties = disk["device_properties"]
+                ref_disk.disk_size_mib = disk["disk_size_mib"]
+                #ref_disk.storage_config = disk["storage_config"]
+                if "data_source_reference" in disk:
+                    ref_disk.data_source_reference = disk["data_source_reference"]
+                else:
+                    if ref_disk.data_source_reference:
+                        ref_disk.data_source_reference = None
+                NSC.spec.resources.disk_list.append(ref_disk)
+
         NSC.save()
 
         log.info("Updating VM clone blueprint for '{}' with instance_id '{}'.".format(vm_name, instance_id))
@@ -130,6 +173,7 @@ def update_substrate_info(vm_uuid, vm, dest_account_uuid_map, vm_uuid_map):
         clone_bp.save()
 
         # update patch config action if there is any
+        log.info("Updating patch config action for '{}' with instance_id '{}'.".format(vm_name, instance_id))
         vm_first_nic_subnet_uuid = ""
         if len(vm["status"]["resources"]["nic_list"]) >= 0:
             vm_first_nic_subnet_uuid = vm["status"]["resources"]["nic_list"][0]["subnet_reference"]["uuid"]
@@ -154,8 +198,9 @@ def update_substrate_info(vm_uuid, vm, dest_account_uuid_map, vm_uuid_map):
             application.save()
         app_intent_spec = application.active_app_profile_instance.intent_spec
         app_intent_spec_dict = ujson.loads(app_intent_spec)
-        for patch in ["resources"]["patch_list"]:
-            patch_data = ["attrs_list"][0]["data"]
+        log.info("Updating patch active app profile instance for '{}' with instance_id '{}'.".format(vm_name, instance_id))
+        for patch in app_intent_spec_dict["resources"]["patch_list"]:
+            patch_data = patch["attrs_list"][0]["data"]
             for i in range(len(patch_data["pre_defined_nic_list"])):
 
                   # operation as add indicates that nic will get added as part of patch action run,
