@@ -42,6 +42,7 @@ SYS_DEFINED_CATEGORY_KEY_LIST = [
     "OSType",
     "CalmVmUniqueIdentifier",
     "CalmUser",
+    "AppType",
     "account_uuid"
 ]
 
