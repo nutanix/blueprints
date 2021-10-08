@@ -35,14 +35,22 @@ dest_base_url = "https://{}:{}/api/nutanix/v3".format(DEST_PC_IP, str(PC_PORT))
 dest_pc_auth = {"username": os.environ['DEST_PC_USER'], "password": os.environ['DEST_PC_PASS']}
 
 SYS_DEFINED_CATEGORY_KEY_LIST = [
+    "ADGroup",
+    "AnalyticsExclusions",
+    "AppTier",
+    "AppType",
     "CalmApplication",
     "CalmDeployment",
     "CalmService",
     "CalmPackage",
+    "Environment",
     "OSType",
+    "Quaratine",
     "CalmVmUniqueIdentifier",
     "CalmUser",
-    "account_uuid"
+    "account_uuid",
+    "TemplateType",
+    "VirtualNetworkType"
 ]
 
 headers = {'content-type': 'application/json', 'Accept': 'application/json'}
