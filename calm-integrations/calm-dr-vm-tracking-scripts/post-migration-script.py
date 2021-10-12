@@ -89,7 +89,8 @@ def update_substrate_info(vm_uuid, vm, dest_account_uuid_map, vm_uuid_map):
             NSE.spec.resources.nic_list[i].ip_endpoint_list = vm["spec"]["resources"]["nic_list"][i]["ip_endpoint_list"]
         for i in range(len(NSE.spec.resources.disk_list)):
             NSE.spec.resources.disk_list[i].device_properties = vm["spec"]["resources"]["disk_list"][i]["device_properties"]
-            NSE.spec.resources.disk_list[i].disk_size_mib = vm["spec"]["resources"]["disk_list"][i]["disk_size_mib"]
+            if "disk_size_mib" in vm["spec"]["resources"]["disk_list"][i]:
+                NSE.spec.resources.disk_list[i].disk_size_mib = vm["spec"]["resources"]["disk_list"][i]["disk_size_mib"]
             #NSE.spec.resources.disk_list[i].storage_config = vm["spec"]["resources"]["disk_list"][i]["storage_config"]
             if NSE.spec.resources.disk_list[i].data_source_reference:
                 if "data_source_reference" in vm["spec"]["resources"]["disk_list"][i]:
@@ -135,8 +136,8 @@ def update_substrate_info(vm_uuid, vm, dest_account_uuid_map, vm_uuid_map):
             NSC.spec.resources.nic_list[i].ip_endpoint_list = vm["spec"]["resources"]["nic_list"][i]["ip_endpoint_list"]
         for i in range(len(NSC.spec.resources.disk_list)):
             NSC.spec.resources.disk_list[i].device_properties = vm["spec"]["resources"]["disk_list"][i]["device_properties"]
-            NSC.spec.resources.disk_list[i].disk_size_mib = vm["spec"]["resources"]["disk_list"][i]["disk_size_mib"]
-            #NSC.spec.resources.disk_list[i].storage_config = vm["spec"]["resources"]["disk_list"][i]["storage_config"]
+            if "disk_size_mib" in vm["spec"]["resources"]["disk_list"][i]:
+                NSC.spec.resources.disk_list[i].disk_size_mib = vm["spec"]["resources"]["disk_list"][i]["disk_size_mib"]
             if NSC.spec.resources.disk_list[i].data_source_reference:
                 if "data_source_reference" in vm["spec"]["resources"]["disk_list"][i]:
                     NSC.spec.resources.disk_list[i].data_source_reference = vm["spec"]["resources"]["disk_list"][i]["data_source_reference"]
@@ -148,8 +149,8 @@ def update_substrate_info(vm_uuid, vm, dest_account_uuid_map, vm_uuid_map):
             ref_disk = copy.deepcopy(NSC.spec.resources.disk_list[0])
             for disk in diff_disk_list:
                 ref_disk.device_properties = disk["device_properties"]
-                ref_disk.disk_size_mib = disk["disk_size_mib"]
-                #ref_disk.storage_config = disk["storage_config"]
+                if "disk_size_mib" in disk:
+                    ref_disk.disk_size_mib = disk["disk_size_mib"]
                 if "data_source_reference" in disk:
                     ref_disk.data_source_reference = disk["data_source_reference"]
                 else:
