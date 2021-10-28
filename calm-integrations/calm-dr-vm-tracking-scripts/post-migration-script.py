@@ -296,7 +296,7 @@ def get_vm_source_dest_uuid_map():
         entities, total_matches = get_recovery_plan_jobs_list(dest_base_url, dest_pc_auth, offset)
         for entity in entities:
             if (
-                entity["status"]["resources"]["execution_parameters"]["action_type"] == "FAILOVER" and
+                entity["status"]["resources"]["execution_parameters"]["action_type"] in ["MIGRATE", "FAILOVER"] and
                 (
                     entity["status"]["execution_status"]["status"] == "COMPLETED" or
                     entity["status"]["execution_status"]["status"] == "COMPLETED_WITH_WARNING"
@@ -309,13 +309,13 @@ def get_vm_source_dest_uuid_map():
         job_execution_status = get_recovery_plan_job_execution_status(dest_base_url, dest_pc_auth, recovery_plan_job)
         step_execution_status_list = job_execution_status["operation_status"]["step_execution_status_list"]
         for step_execution_status_src in step_execution_status_list:
-            if step_execution_status_src["operation_type"] == "ENTITY_RECOVERY":
+            if step_execution_status_src["operation_type"] == "ENTITY_RECOVERY" :
                 step_uuid = step_execution_status_src["step_uuid"]
                 src_vm_uuid = step_execution_status_src["any_entity_reference_list"][0]["uuid"]
                 for step_execution_status_dest in step_execution_status_list:
                     if (
                         step_execution_status_dest["parent_step_uuid"] == step_uuid and
-                        step_execution_status_dest["operation_type"] == "ENTITY_RESTORATION"
+                        step_execution_status_dest["operation_type"] in ["ENTITY_RESTORATION", "ENTITY_MIGRATION"]
                     ):
                         dest_vm_uuid = step_execution_status_dest["any_entity_reference_list"][0]["uuid"]
                 vm_source_dest_uuid_map[src_vm_uuid] = dest_vm_uuid
