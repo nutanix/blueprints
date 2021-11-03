@@ -164,3 +164,4 @@ def main():
         log.info("Exception: %s" % e)
         raise
 if __name__ == '__main__':
+    main()
