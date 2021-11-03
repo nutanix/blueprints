@@ -149,8 +149,8 @@ def create_categories():
                         if element.spec.categories != "":
                             category = json.loads(element.spec.categories)
                             for key in category.keys():
-                                if not is_category_key_present(dest_base_url, dest_pc_auth, key)
-                                    log.info("Category with key {} not present on pc, creating one")
+                                if not is_category_key_present(dest_base_url, dest_pc_auth, key):
+                                    log.info("Category with key {} not present on pc, creating one".format(key))
                                     create_category_key(dest_base_url, dest_pc_auth, key)
                                 log.info("Creating key: {} - value: {}".format(key, category[key]))
                                 create_category_value(dest_base_url, dest_pc_auth, key, category[key])
