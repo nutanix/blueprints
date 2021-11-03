@@ -77,6 +77,21 @@ def create_category_key(base_url, auth, key):
         log.info('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
         raise Exception("Failed to create category key '{}'.".format(key))
 
+def is_category_key_present(base_url, auth, key):
+    method = 'GET'
+    url = base_url + "/categories/{}".format(key)
+    resp = requests.request(
+        method,
+        url,
+        headers=headers,
+        auth=(auth["username"], auth["password"]),
+        verify=False
+    )
+    if resp.ok:
+        return True
+    else:
+        False
+
 def create_category_value(base_url, auth, key, value):
     method = 'PUT'
     url = base_url + "/categories/{}/{}".format(key, value)
@@ -116,7 +131,7 @@ def get_application_uuids(project_name):
     applications = db_handle.fetch_many(AbacEntityCapability,kind="app",project_reference=project_uuid,select=['kind_id', '_created_timestamp_usecs_'])
     for application in applications:
         application_uuid_list.append(application[1][0])
-    
+
     return application_uuid_list
 
 def create_categories():
@@ -134,7 +149,8 @@ def create_categories():
                         if element.spec.categories != "":
                             category = json.loads(element.spec.categories)
                             for key in category.keys():
-                                if key not in SYS_DEFINED_CATEGORY_KEY_LIST:
+                                if not is_category_key_present(dest_base_url, dest_pc_auth, key)
+                                    log.info("Category with key {} not present on pc, creating one")
                                     create_category_key(dest_base_url, dest_pc_auth, key)
                                 log.info("Creating key: {} - value: {}".format(key, category[key]))
                                 create_category_value(dest_base_url, dest_pc_auth, key, category[key])
@@ -143,9 +159,8 @@ def create_categories():
 
 def main():
     try:
-        create_categories()        
+        create_categories()
     except Exception as e:
         log.info("Exception: %s" % e)
         raise
 if __name__ == '__main__':
-    main()
