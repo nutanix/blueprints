@@ -1,6 +1,18 @@
 import os, sys, json, re, uuid, time
 import logging, argparse
 import requests
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+logging.basicConfig(
+        #filename='publish_to_marketplace.log',
+        format='%(asctime)s %(levelname)-8s %(message)s',
+        level=logging.DEBUG,
+        datefmt='%Y-%m-%d %H:%M:%S',
+        handlers=[
+            logging.FileHandler("publish_to_marketplace.log"),
+            logging.StreamHandler()
+        ]
+    )
 logging.basicConfig(
         filename='publish_to_marketplace.log',
         format='%(asctime)s %(levelname)-8s %(message)s',
@@ -23,17 +35,17 @@ def str2bool(v):
 def help_parser():
 
     parser = argparse.ArgumentParser(
-        description='Standard Arguments for talking to vCenter or ESXi')
-    parser.add_argument('--pc',
+        description='Standard Arguments for talking to Prism Central')
+    parser.add_argument('--ip',
                         required=True,
                         action='store',
-                        help='vSphere service to connect to')
+                        help='Prism Central to connect to')
     parser.add_argument('--port',
                         type=int,
                         default=9440,
                         action='store',
                         help='Port to connect on')
-    parser.add_argument('--user',
+    parser.add_argument('--username',
                         required=True,
                         action='store',
                         help='User name to use when connecting to pc')
@@ -77,6 +89,10 @@ def help_parser():
     parser.add_argument("--existing_markeplace_bp", type=str2bool, nargs='?',
                         const=True, default=False,
                         help="Existing marketplace app")
+    parser.add_argument('--os', '--operatingsystem',
+                        required=True,
+                        action='store',
+                        help='operating system of mp item - win versus lin')
     return parser
 
 ### --------------------------------------------------------------------------------- ###
@@ -195,6 +211,45 @@ def remove_platform_data(bp_spec):
             for nic in substrate["create_spec"]["resources"]["nic_list"]:
                 nic["net_name"] = ""
                 nic["nic_type"] = ""
+        if substrate['type'] == "AHV_VM":
+            if operating_system == "WINDOWS":
+                substrate["create_spec"]["resources"]["guest_customization"]["sysprep"]["unattend_xml"] = ""
+            substrate["create_spec"]["resources"]["num_vcpus_per_socket"] = None
+            substrate["create_spec"]["resources"]["num_sockets"] = None
+            substrate["create_spec"]["resources"]["memory_size_mib"] = None
+            for image in substrate["create_spec"]["resources"]["disk_list"]:
+                if "data_source_reference" in image:
+                    image["data_source_reference"]["name"] = ""
+                    image["data_source_reference"]["uuid"] = ""
+            for nic in substrate["create_spec"]["resources"]["nic_list"]:
+                nic["subnet_reference"]["uuid"] = ""
+                nic["subnet_reference"]["name"] = ""
+        if substrate["type"] == "AZURE_VM":
+            substrate["create_spec"]["resources"]["storage_profile"]["image_details"]["sku"] = ""
+            substrate["create_spec"]["resources"]["storage_profile"]["image_details"]["publisher"] = ""
+            substrate["create_spec"]["resources"]["storage_profile"]["image_details"]["offer"] = ""
+            substrate["create_spec"]["resources"]["storage_profile"]["image_details"]["version"] = ""
+            substrate["create_spec"]["resources"]["storage_profile"]["image_details"]["source_image_id"] = ""
+            substrate["create_spec"]["resources"]["storage_profile"]["image_details"]["source_image_type"] = ""
+            substrate["create_spec"]["resources"]["storage_profile"]["image_details"]["type"] = ""
+            for nic in substrate["create_spec"]["resources"]["nw_profile"]["nic_list"]:
+                nic["nsg_name"] = ""
+                nic["vnet_name"] = ""
+                nic["subnet_id"] = ""
+                nic["nsg_id"] = ""
+                nic["private_ip_info"]["ip_address"] = ""
+                nic["private_ip_info"]["type"] = ""
+                nic["nic_name"] = ""
+                nic["subnet_name"] = ""
+                nic["vnet_id"] = ""
+                nic["type"] = ""
+                nic["public_ip_info"] = None
+            substrate["create_spec"]["resources"]["resource_group"] = ""
+            substrate["create_spec"]["resources"]["hw_profile"]["max_data_disk_count"] = 0
+            substrate["create_spec"]["resources"]["hw_profile"]["vm_size"] = ""
+            substrate["create_spec"]["resources"]["location"] = ""
+            substrate["create_spec"]["resources"]["availability_set_id"] = ""
+            substrate["create_spec"]["resources"]["account_uuid"] = ""
     return bp_spec
 
 ### --------------------------------------------------------------------------------- ###
@@ -472,7 +527,7 @@ def publish_bp_as_existing_marketplace_bp(
 
 if __name__ == "__main__":
     parser = help_parser().parse_args()
-    pc_ip = parser.pc
+    pc_ip = parser.ip
     pc_port = parser.port
     blueprint_name = parser.blueprint_name
     marketplace_bp_name = parser.name
@@ -484,10 +539,12 @@ if __name__ == "__main__":
     publish_to_marketplace = parser.publish_to_marketplace
     with_secrets = parser.with_secrets
     existing_markeplace_bp = parser.existing_markeplace_bp
+    operating_system = parser.os
 
     base_url = "https://{}:{}/api/nutanix/v3".format(pc_ip,str(pc_port))
-    auth = { "username": parser.user, "password": parser.password}
+    auth = { "username": parser.username, "password": parser.password}
 
+    print(project)
     blueprint_uuid = get_blueprint_uuid(base_url, auth, blueprint_name)
     blueprint_json = get_blueprint(base_url, auth, blueprint_uuid)
     blueprint_json["spec"] = remove_platform_data(blueprint_json["spec"])
