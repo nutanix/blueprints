@@ -49,18 +49,20 @@ def get_vm(base_url, auth, uuid):
         resp_json = resp.json()
         return resp_json
     else:
-        log.info("Failed to get vms.")
-        log.info('Status code: {}'.format(resp.status_code))
-        log.info('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
-        raise Exception("Failed to get vms.")
+        raise Exception("Failed to get vm '{}'.".format(uuid))
 
 def get_account_uuid_map():
     nutanix_pc_accounts = model.NutanixPCAccount.query(deleted=False)
     dest_account_uuid_map = {}
+    pc_account = None
     for account in nutanix_pc_accounts:
         if account.data.server == DEST_PC_IP:
             pc_account = account
             break
+
+    if not pc_account:
+        raise Exception("Unable to find destination PC account '{}'".format(DEST_PC_IP))
+
     for pe in pc_account.data.nutanix_account:
         dest_account_uuid_map[pe.data.cluster_uuid] = str(pe.uuid)
     return dest_account_uuid_map
