@@ -10,6 +10,7 @@ import copy
 from calm.common.flags import gflags
 
 from calm.lib.model.store.db_session import flush_session
+from aplos.insights.entity_capability import EntityCapability
 import calm.lib.model as model
 
 from helper import change_project, init_contexts, log
@@ -24,15 +25,17 @@ LENGTH = 100
 
 if (
     'DEST_PROJECT_NAME' not in os.environ or
+    'SOURCE_PROJECT_NAME' not in os.environ or
     'DEST_PC_USER' not in os.environ or
     'DEST_PC_PASS' not in os.environ
     ):
-    raise Exception("Please export 'DEST_PROJECT_NAME', 'DEST_PC_USER' &  'DEST_PC_PASS'.")
+    raise Exception("Please export 'DEST_PROJECT_NAME', 'SOURCE_PROJECT_NAME', 'DEST_PC_USER' &  'DEST_PC_PASS'.")
 
 dest_base_url = "https://{}:{}/api/nutanix/v3".format(DEST_PC_IP,str(PC_PORT))
 dest_pc_auth = { "username": os.environ['DEST_PC_USER'], "password": os.environ['DEST_PC_PASS']}
 
 DEST_PROJECT = os.environ['DEST_PROJECT_NAME']
+SRC_PROJECT = os.environ['SOURCE_PROJECT_NAME']
 headers = {'content-type': 'application/json', 'Accept': 'application/json'}
 
 def get_vm(base_url, auth, uuid):
@@ -237,13 +240,17 @@ def update_substrates(vm_uuid_map):
 
 def update_app_project(vm_uuid_map):
     app_names = set()
+    app_kind = "app"
 
     for instance_id in vm_uuid_map.keys():
         NSE = model.NutanixSubstrateElement.query(instance_id=vm_uuid_map[instance_id], deleted=False)
         if NSE:
             NSE = NSE[0]
             app_name = model.AppProfileInstance.get_object(NSE.app_profile_instance_reference).application.name
-            app_names.add(app_name)
+            app_uuid = model.AppProfileInstance.get_object(NSE.app_profile_instance_reference).application.uuid
+            entity_cap = EntityCapability(kind_name=app_kind, kind_id=str(app_uuid))
+            if entity_cap.project_name == SRC_PROJECT:
+                app_names.add(app_name)
 
     for app_name in app_names:
         change_project(app_name, DEST_PROJECT)
