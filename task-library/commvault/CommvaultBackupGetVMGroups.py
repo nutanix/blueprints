@@ -1,3 +1,12 @@
+# region headers
+# escript-template v20190605 / stephane.bourdeaud@nutanix.com
+# * author:     jose.gomez@nutanix.com
+# * version:    20211207
+# task_type:    Application Profile Escript variable
+# task_name:    CV_VM_GROUP
+# description:  List the Commvault VM Groups available
+# endregion
+
 #region capture Calm variables
 USERNAME = "@@{USERNAME}@@"
 PASSWORD = "@@{PASSWORD}@@"

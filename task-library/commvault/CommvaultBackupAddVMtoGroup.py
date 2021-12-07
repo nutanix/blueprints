@@ -1,3 +1,12 @@
+# region headers
+# escript-template v20190605 / stephane.bourdeaud@nutanix.com
+# * author:     jose.gomez@nutanix.com
+# * version:    20211207
+# task_type:    Execute
+# task_name:    Commvault_Add_VM_to_Group
+# description:  Add VM to Commvault VM Group
+# endregion
+
 #region capture Calm variables
 USERNAME = "@@{CRED_CV.username}@@"
 PASSWORD = "@@{CRED_CV.secret}@@"

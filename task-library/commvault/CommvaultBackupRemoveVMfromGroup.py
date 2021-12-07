@@ -1,3 +1,12 @@
+# region headers
+# escript-template v20190605 / stephane.bourdeaud@nutanix.com
+# * author:     jose.gomez@nutanix.com
+# * version:    20211207
+# task_type:    Execute
+# task_name:    Commvault_Remove_VM_from_Group
+# description:  Removes the VM from the Commvault VM Group selected during creation
+# endregion
+
 #region capture Calm variables
 USERNAME = "@@{CRED_CV.username}@@"
 PASSWORD = "@@{CRED_CV.secret}@@"
