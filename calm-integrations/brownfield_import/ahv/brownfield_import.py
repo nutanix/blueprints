@@ -163,6 +163,7 @@ def whitelist_disk_objects(disk_list):
         del disk["uuid"]
         del disk["disk_size_bytes"]
         del disk["storage_config"]
+        del disk["is_migration_in_progress"]
         updated_disk_list.append(disk)
     if "data_source_reference" not in updated_disk_list[0]:
         updated_disk_list[0]["data_source_reference"] = { "kind": "image", "uuid": "cce984f3-9160-409d-b966-9f30e556241d" } 
@@ -205,13 +206,13 @@ def get_vm_spec(vm_meta_info):
     return vm_spec
 
 ### --------------------------------------------------------------------------------- ###
-def get_brownfield_import_vms_list(base_url, auth, project_uuid, account_uuid, length):
+def get_brownfield_import_vms_list(base_url, auth, project_uuid, account_uuid, offset, length):
     method = 'POST'
     url = base_url + "/blueprints/brownfield_import/vms/list"
     resp = None
     payload = {
         "length": length,
-        "offset":0,
+        "offset": offset,
         "filter":"project_uuid=={};account_uuid=={}".format(project_uuid, account_uuid)
     }
     try:
@@ -306,7 +307,12 @@ def get_ahv_account_uuid(base_url, auth, account_name):
             json_resp = resp.json()
             if json_resp['metadata']['total_matches'] > 0:
                 account = json_resp['entities'][0]
-                return account["status"]["resources"]["data"]["cluster_account_reference_list"][0]["uuid"], account["status"]["resources"]["data"]["server"]
+                account_uuid = account["status"]["resources"]["data"]["cluster_account_reference_list"][0]["uuid"]
+                if account["status"]["resources"]["data"]["host_pc"]:
+                    account_pc_ip = pc_ip
+                else:
+                    account_pc_ip = account["status"]["resources"]["data"]["server"]
+                return account_uuid, account_pc_ip
             else:
                 logging.error("Could not find account '{}'".format(account_name))
                 sys.exit(1)
@@ -578,7 +584,7 @@ if __name__ == "__main__":
     logging.info("Project uuid: {}".format(project_uuid))
     logging.info("Account uuid: {}".format(account_uuid))
     logging.info("Account PCIP: {}".format(accounts_pc_ip))
-    vm_import_list = get_brownfield_import_vms_list(base_url, auth, project_uuid, account_uuid, 5)
+    vm_import_list = get_brownfield_import_vms_list(base_url, auth, project_uuid, account_uuid, 0, 5)
     total_matches = vm_import_list['metadata']['total_matches']
     logging.info("VM's to be imported are: {}".format(total_matches))
 
@@ -592,7 +598,7 @@ if __name__ == "__main__":
         number_of_executions = last_item-first_item
         success_fail_apps = 0
         count += number_of_executions
-        vm_input_list = get_brownfield_import_vms_list(base_url, auth, project_uuid, account_uuid, parallel_process)
+        vm_input_list = get_brownfield_import_vms_list(base_url, auth, project_uuid, account_uuid, first_item, parallel_process)
  
         for vm_meta_info in vm_input_list["entities"]:
             vm_spec = get_vm_spec(vm_meta_info)
