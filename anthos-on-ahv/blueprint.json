@@ -689,7 +689,7 @@
                                         "name": "Create_Cluster",
                                         "attrs": {
                                             "exit_status": [],
-                                            "script": "# ============== DO NO CHANGE AFTER THIS ===============\nsource ~\/variables.sh\necho '======Create Anthos cluster======'\necho \"invoking $ANTHOS_CLUSTER_NAME\"\n# Install PyYAML\nsudo python2 -m pip install pyyaml\n\n# Create Anthos configuration file\ncd ~\/baremetal\ncurl -s $PYTHON_ANTHOS_GENCONFIG | python2\n\n# Create Anthos Kubernetes cluster\necho \"Creating Anthos cluster. This can take about 45 minutes depending on Internet connectivity\"\nif .\/bmctl create cluster -c $ANTHOS_CLUSTER_NAME > \/dev\/null ; then\n    export KUBECONFIG=$HOME\/baremetal\/bmctl-workspace\/${ANTHOS_CLUSTER_NAME}\/${ANTHOS_CLUSTER_NAME}-kubeconfig\n    echo \"KUBECONFIG=$KUBECONFIG\"\n    mkdir -p $HOME\/.kube\n    cp $KUBECONFIG $HOME\/.kube\/config\nelse\n    echo \"Check the logs located in $HOME\/baremetal\/bmctl-workspace\/${ANTHOS_CLUSTER_NAME}\/log\"\n    exit 1\nfi\n\n",
+                                            "script": "# ============== DO NO CHANGE AFTER THIS ===============\nsource ~\/variables.sh\necho '======Create Anthos cluster======'\necho \"invoking $ANTHOS_CLUSTER_NAME\"\n\n# Install Python 3\nsudo dnf install -y python3\n\n# Install PyYAML\nsudo python3 -m pip install pyyaml\n\n# Create Anthos configuration file\ncd ~\/baremetal\ncurl -s $PYTHON_ANTHOS_GENCONFIG | python3\n\n# Create Anthos Kubernetes cluster\necho \"Creating Anthos cluster. This can take about 45 minutes depending on Internet connectivity\"\nif .\/bmctl create cluster -c $ANTHOS_CLUSTER_NAME > \/dev\/null ; then\n    export KUBECONFIG=$HOME\/baremetal\/bmctl-workspace\/${ANTHOS_CLUSTER_NAME}\/${ANTHOS_CLUSTER_NAME}-kubeconfig\n    echo \"KUBECONFIG=$KUBECONFIG\"\n    mkdir -p $HOME\/.kube\n    cp $KUBECONFIG $HOME\/.kube\/config\nelse\n    echo \"Check the logs located in $HOME\/baremetal\/bmctl-workspace\/${ANTHOS_CLUSTER_NAME}\/log\"\n    exit 1\nfi\n\n",
                                             "eval_variables": [
                                                 "KUBECONFIG"
                                             ],
@@ -971,7 +971,7 @@
                                         "child_tasks_local_reference_list": [],
                                         "name": "Install_Docker",
                                         "attrs": {
-                                            "script": "# Eject cloud-init\nsudo eject\n\n# Setting SELinux to permissive\nsudo setenforce 0\nsudo sed -i 's\/SELINUX=enforcing\/SELINUX=permissive\/g' \/etc\/selinux\/config\n\nsudo sestatus | grep \"Current mode\"\n\n# Disabling firewalld\nsudo systemctl stop firewalld\nsudo systemctl disable firewalld\n\n# Remove any previous Docker version\nsudo dnf remove docker \\\n  docker-client \\\n  docker-client-latest \\\n  docker-common \\\n  docker-latest \\\n  docker-latest-logrotate \\\n  docker-logrotate \\\n  docker-engine\n\n# Install iptables but disable it (https:\/\/github.com\/moby\/moby\/issues\/41799 & https:\/\/cloud.google.com\/compute\/docs\/troubleshooting\/known-issues)\nsudo dnf install -y iptables-services\nsudo chkconfig iptables off\n\n# Install iSCSI and NFS CentOS packages for Nutanix Volumes and Files CSI support\nsudo dnf install -y iscsi-initiator-utils nfs-utils\nsudo systemctl enable iscsid\nsudo systemctl start iscsid\n\n# Install Docker 19.03+\nsudo dnf install -y yum-utils\nsudo yum-config-manager \\\n    --add-repo \\\n    https:\/\/download.docker.com\/linux\/centos\/docker-ce.repo\nsudo dnf install -y docker-ce docker-ce-cli containerd.io\nsudo systemctl enable docker\nsudo systemctl start docker\n\n# Verify you are now running version 19.03+\nsudo docker version\n\n# Add your user to the docker group\nsudo usermod -aG docker $USER\n\n# Change default cgroup driver to systemd\ncat <<EOF | sudo tee \/etc\/docker\/daemon.json\n{\n  \"exec-opts\": [\"native.cgroupdriver=systemd\"],\n  \"log-driver\": \"json-file\",\n  \"log-opts\": {\n    \"max-size\": \"100m\"\n  },\n  \"storage-driver\": \"overlay2\",\n  \"storage-opts\": [\n    \"overlay2.override_kernel_check=true\"\n  ]\n}\nEOF\n\nsudo systemctl restart docker\nsudo docker info | grep -i cgroup\n",
+                                            "script": "# Eject cloud-init\nsudo eject\n\n# Setting SELinux to permissive\nsudo setenforce 0\nsudo sed -i 's\/SELINUX=enforcing\/SELINUX=permissive\/g' \/etc\/selinux\/config\n\nsudo sestatus | grep \"Current mode\"\n\n# Disabling firewalld\nsudo systemctl stop firewalld\nsudo systemctl disable firewalld\n\n# Remove any previous Docker version\nsudo dnf remove docker \\\n  docker-client \\\n  docker-client-latest \\\n  docker-common \\\n  docker-latest \\\n  docker-latest-logrotate \\\n  docker-logrotate \\\n  docker-engine\n\n# Use CentOS 8 Vault repo due to CentOS 8 EOL on December 31, 2021\nsudo sed -i -e \"s\/^mirrorlist\/#mirrorlist\/g\" -e \"s\/^#baseurl\/baseurl\/g\" -e \"s\/mirror.\/vault.\/g\" \/etc\/yum.repos.d\/*.repo\n\n# Install iptables but disable it (https:\/\/github.com\/moby\/moby\/issues\/41799 & https:\/\/cloud.google.com\/compute\/docs\/troubleshooting\/known-issues)\nsudo dnf install -y iptables-services\nsudo chkconfig iptables off\n\n# Install iSCSI and NFS CentOS packages for Nutanix Volumes and Files CSI support\nsudo dnf install -y iscsi-initiator-utils nfs-utils\nsudo systemctl enable iscsid\nsudo systemctl start iscsid\n\n# Install Docker 19.03+\nsudo dnf install -y yum-utils\nsudo yum-config-manager \\\n    --add-repo \\\n    https:\/\/download.docker.com\/linux\/centos\/docker-ce.repo\nsudo dnf install -y docker-ce docker-ce-cli containerd.io\nsudo systemctl enable docker\nsudo systemctl start docker\n\n# Verify you are now running version 19.03+\nsudo docker version\n\n# Add your user to the docker group\nsudo usermod -aG docker $USER\n\n# Change default cgroup driver to systemd\ncat <<EOF | sudo tee \/etc\/docker\/daemon.json\n{\n  \"exec-opts\": [\"native.cgroupdriver=systemd\"],\n  \"log-driver\": \"json-file\",\n  \"log-opts\": {\n    \"max-size\": \"100m\"\n  },\n  \"storage-driver\": \"overlay2\",\n  \"storage-opts\": [\n    \"overlay2.override_kernel_check=true\"\n  ]\n}\nEOF\n\nsudo systemctl restart docker\nsudo docker info | grep -i cgroup\n",
                                             "type": "",
                                             "command_line_args": "",
                                             "exit_status": [],
@@ -1391,7 +1391,7 @@
                                         "child_tasks_local_reference_list": [],
                                         "name": "Install_Docker",
                                         "attrs": {
-                                            "script": "# Eject cloud-init\nsudo eject\n\n# Setting SELinux to permissive\nsudo setenforce 0\nsudo sed -i 's\/SELINUX=enforcing\/SELINUX=permissive\/g' \/etc\/selinux\/config\n\nsudo sestatus | grep \"Current mode\"\n\n# Disabling firewalld\nsudo systemctl stop firewalld\nsudo systemctl disable firewalld\n\n# Remove any previous Docker version\nsudo dnf remove docker \\\n  docker-client \\\n  docker-client-latest \\\n  docker-common \\\n  docker-latest \\\n  docker-latest-logrotate \\\n  docker-logrotate \\\n  docker-engine\n\n# Install iptables but disable it (https:\/\/github.com\/moby\/moby\/issues\/41799 & https:\/\/cloud.google.com\/compute\/docs\/troubleshooting\/known-issues)\nsudo dnf install -y iptables-services\nsudo chkconfig iptables off\n\n# Install iSCSI and NFS CentOS packages for Nutanix Volumes and Files CSI support\nsudo dnf install -y iscsi-initiator-utils nfs-utils\nsudo systemctl enable iscsid\nsudo systemctl start iscsid\n\n# Install Docker 19.03+\nsudo dnf install -y yum-utils\nsudo yum-config-manager \\\n    --add-repo \\\n    https:\/\/download.docker.com\/linux\/centos\/docker-ce.repo\nsudo dnf install -y docker-ce docker-ce-cli containerd.io\nsudo systemctl enable docker\nsudo systemctl start docker\n\n# Verify you are now running version 19.03+\nsudo docker version\n\n# Add your user to the docker group\nsudo usermod -aG docker $USER\n\n# Change default cgroup driver to systemd\ncat <<EOF | sudo tee \/etc\/docker\/daemon.json\n{\n  \"exec-opts\": [\"native.cgroupdriver=systemd\"],\n  \"log-driver\": \"json-file\",\n  \"log-opts\": {\n    \"max-size\": \"100m\"\n  },\n  \"storage-driver\": \"overlay2\",\n  \"storage-opts\": [\n    \"overlay2.override_kernel_check=true\"\n  ]\n}\nEOF\n\nsudo systemctl restart docker\nsudo docker info | grep -i cgroup\n",
+                                            "script": "# Eject cloud-init\nsudo eject\n\n# Setting SELinux to permissive\nsudo setenforce 0\nsudo sed -i 's\/SELINUX=enforcing\/SELINUX=permissive\/g' \/etc\/selinux\/config\n\nsudo sestatus | grep \"Current mode\"\n\n# Disabling firewalld\nsudo systemctl stop firewalld\nsudo systemctl disable firewalld\n\n# Remove any previous Docker version\nsudo dnf remove docker \\\n  docker-client \\\n  docker-client-latest \\\n  docker-common \\\n  docker-latest \\\n  docker-latest-logrotate \\\n  docker-logrotate \\\n  docker-engine\n\n# Use CentOS 8 Vault repo due to CentOS 8 EOL on December 31, 2021\nsudo sed -i -e \"s\/^mirrorlist\/#mirrorlist\/g\" -e \"s\/^#baseurl\/baseurl\/g\" -e \"s\/mirror.\/vault.\/g\" \/etc\/yum.repos.d\/*.repo\n\n# Install iptables but disable it (https:\/\/github.com\/moby\/moby\/issues\/41799 & https:\/\/cloud.google.com\/compute\/docs\/troubleshooting\/known-issues)\nsudo dnf install -y iptables-services\nsudo chkconfig iptables off\n\n# Install iSCSI and NFS CentOS packages for Nutanix Volumes and Files CSI support\nsudo dnf install -y iscsi-initiator-utils nfs-utils\nsudo systemctl enable iscsid\nsudo systemctl start iscsid\n\n# Install Docker 19.03+\nsudo dnf install -y yum-utils\nsudo yum-config-manager \\\n    --add-repo \\\n    https:\/\/download.docker.com\/linux\/centos\/docker-ce.repo\nsudo dnf install -y docker-ce docker-ce-cli containerd.io\nsudo systemctl enable docker\nsudo systemctl start docker\n\n# Verify you are now running version 19.03+\nsudo docker version\n\n# Add your user to the docker group\nsudo usermod -aG docker $USER\n\n# Change default cgroup driver to systemd\ncat <<EOF | sudo tee \/etc\/docker\/daemon.json\n{\n  \"exec-opts\": [\"native.cgroupdriver=systemd\"],\n  \"log-driver\": \"json-file\",\n  \"log-opts\": {\n    \"max-size\": \"100m\"\n  },\n  \"storage-driver\": \"overlay2\",\n  \"storage-opts\": [\n    \"overlay2.override_kernel_check=true\"\n  ]\n}\nEOF\n\nsudo systemctl restart docker\nsudo docker info | grep -i cgroup\n",
                                             "type": "",
                                             "command_line_args": "",
                                             "exit_status": [],
@@ -1705,7 +1705,7 @@
                                         "child_tasks_local_reference_list": [],
                                         "name": "Install_Docker",
                                         "attrs": {
-                                            "script": "# Eject cloud-init\nsudo eject\n\n# Setting SELinux to permissive\nsudo setenforce 0\nsudo sed -i 's\/SELINUX=enforcing\/SELINUX=permissive\/g' \/etc\/selinux\/config\n\nsudo sestatus | grep \"Current mode\"\n\n# Disabling firewalld\nsudo systemctl stop firewalld\nsudo systemctl disable firewalld\n\n# Remove any previous Docker version\nsudo dnf remove docker \\\n  docker-client \\\n  docker-client-latest \\\n  docker-common \\\n  docker-latest \\\n  docker-latest-logrotate \\\n  docker-logrotate \\\n  docker-engine\n\n# Install iptables but disable it (https:\/\/github.com\/moby\/moby\/issues\/41799 & https:\/\/cloud.google.com\/compute\/docs\/troubleshooting\/known-issues)\nsudo dnf install -y iptables-services\nsudo chkconfig iptables off\n\n# Install iSCSI and NFS CentOS packages for Nutanix Volumes and Files CSI support\nsudo dnf install -y iscsi-initiator-utils nfs-utils\nsudo systemctl enable iscsid\nsudo systemctl start iscsid\n\n# Install Docker 19.03+\nsudo dnf install -y yum-utils\nsudo yum-config-manager \\\n    --add-repo \\\n    https:\/\/download.docker.com\/linux\/centos\/docker-ce.repo\nsudo dnf install -y docker-ce docker-ce-cli containerd.io\nsudo systemctl enable docker\nsudo systemctl start docker\n\n# Verify you are now running version 19.03+\nsudo docker version\n\n# Add your user to the docker group\nsudo usermod -aG docker $USER\n\n# Change default cgroup driver to systemd\ncat <<EOF | sudo tee \/etc\/docker\/daemon.json\n{\n  \"exec-opts\": [\"native.cgroupdriver=systemd\"],\n  \"log-driver\": \"json-file\",\n  \"log-opts\": {\n    \"max-size\": \"100m\"\n  },\n  \"storage-driver\": \"overlay2\",\n  \"storage-opts\": [\n    \"overlay2.override_kernel_check=true\"\n  ]\n}\nEOF\n\nsudo systemctl restart docker\nsudo docker info | grep -i cgroup\n",
+                                            "script": "# Eject cloud-init\nsudo eject\n\n# Setting SELinux to permissive\nsudo setenforce 0\nsudo sed -i 's\/SELINUX=enforcing\/SELINUX=permissive\/g' \/etc\/selinux\/config\n\nsudo sestatus | grep \"Current mode\"\n\n# Disabling firewalld\nsudo systemctl stop firewalld\nsudo systemctl disable firewalld\n\n# Remove any previous Docker version\nsudo dnf remove docker \\\n  docker-client \\\n  docker-client-latest \\\n  docker-common \\\n  docker-latest \\\n  docker-latest-logrotate \\\n  docker-logrotate \\\n  docker-engine\n\n# Use CentOS 8 Vault repo due to CentOS 8 EOL on December 31, 2021\nsudo sed -i -e \"s\/^mirrorlist\/#mirrorlist\/g\" -e \"s\/^#baseurl\/baseurl\/g\" -e \"s\/mirror.\/vault.\/g\" \/etc\/yum.repos.d\/*.repo\n\n# Install iptables but disable it (https:\/\/github.com\/moby\/moby\/issues\/41799 & https:\/\/cloud.google.com\/compute\/docs\/troubleshooting\/known-issues)\nsudo dnf install -y iptables-services\nsudo chkconfig iptables off\n\n# Install iSCSI and NFS CentOS packages for Nutanix Volumes and Files CSI support\nsudo dnf install -y iscsi-initiator-utils nfs-utils\nsudo systemctl enable iscsid\nsudo systemctl start iscsid\n\n# Install Docker 19.03+\nsudo dnf install -y yum-utils\nsudo yum-config-manager \\\n    --add-repo \\\n    https:\/\/download.docker.com\/linux\/centos\/docker-ce.repo\nsudo dnf install -y docker-ce docker-ce-cli containerd.io\nsudo systemctl enable docker\nsudo systemctl start docker\n\n# Verify you are now running version 19.03+\nsudo docker version\n\n# Add your user to the docker group\nsudo usermod -aG docker $USER\n\n# Change default cgroup driver to systemd\ncat <<EOF | sudo tee \/etc\/docker\/daemon.json\n{\n  \"exec-opts\": [\"native.cgroupdriver=systemd\"],\n  \"log-driver\": \"json-file\",\n  \"log-opts\": {\n    \"max-size\": \"100m\"\n  },\n  \"storage-driver\": \"overlay2\",\n  \"storage-opts\": [\n    \"overlay2.override_kernel_check=true\"\n  ]\n}\nEOF\n\nsudo systemctl restart docker\nsudo docker info | grep -i cgroup\n",
                                             "type": "",
                                             "command_line_args": "",
                                             "exit_status": [],
@@ -1846,14 +1846,14 @@
                             },
                             "power_state": "ON",
                             "type": "",
-                            "account_uuid": "07d7bfd2-dab5-4562-b760-2d2eeccc7d98",
+                            "account_uuid": "00000000-0000-0000-0000-000000000000",
                             "boot_config": {
                                 "boot_device": {
                                     "type": "",
                                     "disk_address": {
                                         "type": "",
                                         "device_index": 0,
-                                        "adapter_type": "PCI"
+                                        "adapter_type": "SCSI"
                                     }
                                 },
                                 "type": "",
@@ -1865,7 +1865,7 @@
                                     "kind": "app_package",
                                     "type": "",
                                     "name": "AHV_CENTOS",
-                                    "uuid": "f20cc979-98ad-46e4-a981-199218f22644"
+                                    "uuid": "00000000-0000-0000-0000-000000000000"
                                 },
                                 "type": "",
                                 "disk_size_mib": 131072,
@@ -1875,7 +1875,7 @@
                                     "disk_address": {
                                         "type": "",
                                         "device_index": 0,
-                                        "adapter_type": "PCI"
+                                        "adapter_type": "SCSI"
                                     },
                                     "device_type": "DISK"
                                 }
@@ -1944,14 +1944,14 @@
                             },
                             "power_state": "ON",
                             "type": "",
-                            "account_uuid": "07d7bfd2-dab5-4562-b760-2d2eeccc7d98",
+                            "account_uuid": "00000000-0000-0000-0000-000000000000",
                             "boot_config": {
                                 "boot_device": {
                                     "type": "",
                                     "disk_address": {
                                         "type": "",
                                         "device_index": 0,
-                                        "adapter_type": "PCI"
+                                        "adapter_type": "SCSI"
                                     }
                                 },
                                 "type": "",
@@ -1963,7 +1963,7 @@
                                     "kind": "app_package",
                                     "type": "",
                                     "name": "AHV_CENTOS",
-                                    "uuid": "f20cc979-98ad-46e4-a981-199218f22644"
+                                    "uuid": "00000000-0000-0000-0000-000000000000"
                                 },
                                 "type": "",
                                 "disk_size_mib": 131072,
@@ -1973,7 +1973,7 @@
                                     "disk_address": {
                                         "type": "",
                                         "device_index": 0,
-                                        "adapter_type": "PCI"
+                                        "adapter_type": "SCSI"
                                     },
                                     "device_type": "DISK"
                                 }
@@ -2042,14 +2042,14 @@
                             },
                             "power_state": "ON",
                             "type": "",
-                            "account_uuid": "07d7bfd2-dab5-4562-b760-2d2eeccc7d98",
+                            "account_uuid": "00000000-0000-0000-0000-000000000000",
                             "boot_config": {
                                 "boot_device": {
                                     "type": "",
                                     "disk_address": {
                                         "type": "",
                                         "device_index": 0,
-                                        "adapter_type": "PCI"
+                                        "adapter_type": "SCSI"
                                     }
                                 },
                                 "type": "",
@@ -2061,7 +2061,7 @@
                                     "kind": "app_package",
                                     "type": "",
                                     "name": "AHV_CENTOS",
-                                    "uuid": "f20cc979-98ad-46e4-a981-199218f22644"
+                                    "uuid": "00000000-0000-0000-0000-000000000000"
                                 },
                                 "type": "",
                                 "disk_size_mib": 131072,
@@ -2071,7 +2071,7 @@
                                     "disk_address": {
                                         "type": "",
                                         "device_index": 0,
-                                        "adapter_type": "PCI"
+                                        "adapter_type": "SCSI"
                                     },
                                     "device_type": "DISK"
                                 }
@@ -3041,13 +3041,17 @@
                                 "name": "Default_UpgradeCluster_dag"
                             },
                             "variable_list": [{
+                                "regex": {
+                                    "should_validate": true,
+                                    "value": "^(\\d+\\.)?(\\d+\\.)?(\\*|\\d+)$"
+                                },
                                 "val_type": "STRING",
                                 "is_mandatory": true,
-                                "description": "The available versions are not supported yet but they can be tested.",
+                                "description": "The supported versions are 1.6.x, 1.7.x, 1.8.x, and 1.9.x. Version 1.10.x is not supported yet but can be tested.",
                                 "data_type": "BASE",
                                 "type": "LOCAL",
                                 "name": "ANTHOS_VERSION",
-                                "value": "1.6.2",
+                                "value": "",
                                 "label": "Anthos cluster version",
                                 "attrs": {
                                     "type": ""
@@ -3055,14 +3059,7 @@
                                 "editables": {
                                     "value": true
                                 },
-                                "is_hidden": false,
-                                "options": {
-                                    "type": "PREDEFINED",
-                                    "choices": [
-                                        "1.6.2",
-                                        "1.7.0"
-                                    ]
-                                }
+                                "is_hidden": false
                             }]
                         },
                         "name": "UpgradeCluster"
@@ -3076,7 +3073,7 @@
                         "data_type": "BASE",
                         "type": "LOCAL",
                         "name": "PYTHON_ANTHOS_GENCONFIG",
-                        "value": "https:\/\/raw.githubusercontent.com\/pipoe2h\/calm-dsl\/anthos-on-ahv\/blueprints\/anthos-on-ahv\/scripts\/anthos_generate_config.py",
+                        "value": "https:\/\/raw.githubusercontent.com\/nutanixdev\/anthos-on-ahv\/main\/scripts\/anthos_generate_config.py",
                         "label": "Python Parser URL",
                         "attrs": {
                             "type": ""
@@ -3206,13 +3203,17 @@
                         "is_hidden": false
                     },
                     {
+                        "regex": {
+                            "should_validate": true,
+                            "value": "^(\\d+\\.)?(\\d+\\.)?(\\*|\\d+)$"
+                        },
                         "val_type": "STRING",
                         "is_mandatory": true,
-                        "description": "",
+                        "description": "The supported versions are 1.6.x, 1.7.x, 1.8.x, and 1.9.x. Version 1.10.x is not supported yet but can be tested.",
                         "data_type": "BASE",
                         "type": "LOCAL",
                         "name": "ANTHOS_VERSION",
-                        "value": "1.6.1",
+                        "value": "1.9.4",
                         "label": "Anthos cluster version",
                         "attrs": {
                             "type": ""
@@ -3220,24 +3221,20 @@
                         "editables": {
                             "value": true
                         },
-                        "is_hidden": false,
-                        "options": {
-                            "type": "PREDEFINED",
-                            "choices": [
-                                "1.6.1",
-                                "1.6.2",
-                                "1.7.0"
-                            ]
-                        }
+                        "is_hidden": false
                     },
                     {
+                        "regex": {
+                            "should_validate": true,
+                            "value": "^[a-z](?:[a-z0-9-]*[a-z0-9])?$"
+                        },
                         "val_type": "STRING",
                         "is_mandatory": true,
-                        "description": "",
+                        "description": "Name must start with a lowercase letter followed by up to 39 lowercase letters, numbers, or hyphens, and cannot end with a hyphen. Name is permanent and unique",
                         "data_type": "BASE",
                         "type": "LOCAL",
                         "name": "ANTHOS_CLUSTER_NAME",
-                        "value": "@@{calm_application_name}@@",
+                        "value": "",
                         "label": "Anthos cluster name",
                         "attrs": {
                             "type": ""
@@ -3390,10 +3387,10 @@
     },
     "api_version": "3.0",
     "metadata": {
-        "last_update_time": "1617871862682027",
+        "last_update_time": "1643811976450157",
         "kind": "blueprint",
-        "spec_version": 1,
+        "spec_version": 2,
         "creation_time": "1617871856766103",
-        "name": "Anthos_on_AHV"
+        "name": "anthos-on-ahv"
     }
 }
