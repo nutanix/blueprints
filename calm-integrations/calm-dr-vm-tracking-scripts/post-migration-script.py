@@ -91,7 +91,15 @@ def update_substrate_info(vm_uuid, vm, dest_account_uuid_map, vm_uuid_map):
         for i in range(len(NSE.spec.resources.nic_list)):
             NSE.spec.resources.nic_list[i].nic_type = vm["status"]["resources"]["nic_list"][i]["nic_type"]
             NSE.spec.resources.nic_list[i].subnet_reference = vm["status"]["resources"]["nic_list"][i]["subnet_reference"]
-            NSE.spec.resources.nic_list[i].ip_endpoint_list = vm["spec"]["resources"]["nic_list"][i]["ip_endpoint_list"]
+            ip_endpoint_list = vm["spec"]["resources"]["nic_list"][i]["ip_endpoint_list"]
+            for ip_endpoint in ip_endpoint_list:
+                if "ip_type" in ip_endpoint:
+                    del ip_endpoint["ip_type"]
+                if "gateway_address_list" in ip_endpoint:
+                    del ip_endpoint["gateway_address_list"]
+                if "prefix_length" in ip_endpoint:
+                    del ip_endpoint["prefix_length"]
+            NSE.spec.resources.nic_list[i].ip_endpoint_list = ip_endpoint_list
         for i in range(len(NSE.spec.resources.disk_list)):
             NSE.spec.resources.disk_list[i].device_properties = vm["spec"]["resources"]["disk_list"][i]["device_properties"]
             if "disk_size_mib" in vm["spec"]["resources"]["disk_list"][i]:
@@ -110,7 +118,15 @@ def update_substrate_info(vm_uuid, vm, dest_account_uuid_map, vm_uuid_map):
         for i in range(len(NS.spec.resources.nic_list)):
             NS.spec.resources.nic_list[i].nic_type = vm["status"]["resources"]["nic_list"][i]["nic_type"]
             NS.spec.resources.nic_list[i].subnet_reference = vm["status"]["resources"]["nic_list"][i]["subnet_reference"]
-            NS.spec.resources.nic_list[i].ip_endpoint_list = vm["spec"]["resources"]["nic_list"][i]["ip_endpoint_list"]
+            ip_endpoint_list = vm["spec"]["resources"]["nic_list"][i]["ip_endpoint_list"]
+            for ip_endpoint in ip_endpoint_list:
+                if "ip_type" in ip_endpoint:
+                    del ip_endpoint["ip_type"]
+                if "gateway_address_list" in ip_endpoint:
+                    del ip_endpoint["gateway_address_list"]
+                if "prefix_length" in ip_endpoint:
+                    del ip_endpoint["prefix_length"]
+            NS.spec.resources.nic_list[i].ip_endpoint_list = ip_endpoint_list
         #for i in range(len(NS.spec.resources.disk_list)):
         #    NS.spec.resources.disk_list[i].device_properties = vm["spec"]["resources"]["disk_list"][i]["device_properties"]
         ##    NS.spec.resources.disk_list[i].disk_size_mib = vm["spec"]["resources"]["disk_list"][i]["disk_size_mib"]
@@ -138,7 +154,16 @@ def update_substrate_info(vm_uuid, vm, dest_account_uuid_map, vm_uuid_map):
         for i in range(len(NSC.spec.resources.nic_list)):
             NSC.spec.resources.nic_list[i].nic_type = vm["status"]["resources"]["nic_list"][i]["nic_type"]
             NSC.spec.resources.nic_list[i].subnet_reference = vm["status"]["resources"]["nic_list"][i]["subnet_reference"]
-            NSC.spec.resources.nic_list[i].ip_endpoint_list = vm["spec"]["resources"]["nic_list"][i]["ip_endpoint_list"]
+            ip_endpoint_list = vm["spec"]["resources"]["nic_list"][i]["ip_endpoint_list"]
+            for ip_endpoint in ip_endpoint_list:
+                if "ip_type" in ip_endpoint:
+                    del ip_endpoint["ip_type"]
+                if "gateway_address_list" in ip_endpoint:
+                    del ip_endpoint["gateway_address_list"]
+                if "prefix_length" in ip_endpoint:
+                    del ip_endpoint["prefix_length"]
+            NSC.spec.resources.nic_list[i].ip_endpoint_list = ip_endpoint_list
+
         for i in range(len(NSC.spec.resources.disk_list)):
             NSC.spec.resources.disk_list[i].device_properties = vm["spec"]["resources"]["disk_list"][i]["device_properties"]
             if "disk_size_mib" in vm["spec"]["resources"]["disk_list"][i]:
