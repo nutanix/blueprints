@@ -24,6 +24,8 @@ if (
 ):
     raise Exception("Please export 'DEST_PC_IP', 'DEST_PC_USER', 'DEST_PC_PASS' and 'SOURCE_PROJECT_NAME'.")
 
+dest_categorie_map = {}
+
 DEST_PC_IP = os.environ['DEST_PC_IP']
 PC_PORT = 9440
 LENGTH = 100
@@ -149,11 +151,17 @@ def create_categories():
                         if element.spec.categories != "":
                             category = json.loads(element.spec.categories)
                             for key in category.keys():
-                                if not is_category_key_present(dest_base_url, dest_pc_auth, key):
-                                    log.info("Category with key {} not present on pc, creating one".format(key))
-                                    create_category_key(dest_base_url, dest_pc_auth, key)
-                                log.info("Creating key: {} - value: {}".format(key, category[key]))
-                                create_category_value(dest_base_url, dest_pc_auth, key, category[key])
+                                value = category[key]
+                                if (key not in dest_categorie_map.keys()):
+                                    dest_categorie_map[key] = []
+                                    if key not in SYS_DEFINED_CATEGORY_KEY_LIST:
+                                        log.info("Category with key {} not present on pc, creating one".format(key))
+                                        create_category_key(dest_base_url, dest_pc_auth, key)
+                                else:
+                                    if value not in dest_categorie_map[key]:
+                                        dest_categorie_map[key].append(value)
+                                        log.info("Creating key: {} - value: {}".format(key, value))
+                                        create_category_value(dest_base_url, dest_pc_auth, key, value)
 
     log.info("Done with creating categories and values")
 
