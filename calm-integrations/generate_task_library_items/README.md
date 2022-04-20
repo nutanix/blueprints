@@ -10,7 +10,7 @@ Update 2021-01-28: the [Calm DSL](https://github.com/nutanix/calm-dsl/#task-libr
 
 - Clone the Nutanix Calm blueprints repository: 
     ```shell
-    git clone https://github.com/nutanix/calm-dsl.git
+    git clone https://github.com/nutanix/blueprints.git
   ```
 - Change the directory to: ```calm-integrations/generate_task_library_items```
 

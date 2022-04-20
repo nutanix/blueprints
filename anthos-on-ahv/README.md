@@ -12,9 +12,9 @@ The characteristics for the Kubernetes cluster are:
 
 * Anthos version: bare metal
 
-  * Supported [1.6.x](https://cloud.google.com/anthos/clusters/docs/bare-metal/1.6/concepts/about-bare-metal)
+  * Supported [1.6.x, 1.7.x, 1.8.x and 1.9.x](https://cloud.google.com/anthos/clusters/docs/bare-metal/1.6/concepts/about-bare-metal)
 
-  * Unsupported [1.7.0](https://cloud.google.com/anthos/clusters/docs/bare-metal/1.7/concepts/about-bare-metal)
+  * Unsupported [1.10.x](https://cloud.google.com/anthos/clusters/docs/bare-metal/1.7/concepts/about-bare-metal)
 
 * Type: hybrid - <https://cloud.google.com/anthos/clusters/docs/bare-metal/1.6/installing/install-prep#hybrid_cluster_deployment>
 
@@ -27,6 +27,8 @@ The characteristics for the Kubernetes cluster are:
   * 2 x Worker nodes
 
 * Virtual machine OS: CentOS 8 GenericCloud - <https://cloud.centos.org/centos/8/x86_64/images/CentOS-8-GenericCloud-8.2.2004-20200611.2.x86_64.qcow2>
+
+  * IMPORTANT: CentOS 8.2.2004 used in this blueprint is EOL. The blueprint is using vault.centos.org repository for packages.
 
 * High availability: yes
 
