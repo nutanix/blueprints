@@ -1,10 +1,20 @@
 # Plublish blueprint to marketplace without substrate spec
 
+## How do we execute this?
+You can execute this as a native python script, or as a runbook
+
 ## What does this do?
 This script publishes existing blueprint to marketplace (LOCAL) within a PC without substrate elements.
 
 ## Supported Platforms:
-    - VCenter
+    - VCenter, AHV
+
+## Runbook
+1. Import the runbook in Prism Central NCM Self-Service
+2. Update the credential for PC
+3. Update the variables to match your environment
+4. Execute the runbook.
+Note - the runbook is executed on your local Calm\PC as an escript.  
 
 ## Inputs for publish_blueprints_to_marketplace.py:
 * --pc 						- PC Ip address
