@@ -195,6 +195,45 @@ def remove_platform_data(bp_spec):
             for nic in substrate["create_spec"]["resources"]["nic_list"]:
                 nic["net_name"] = ""
                 nic["nic_type"] = ""
+        if substrate['type'] == "AHV_VM":
+            for disk in substrate["create_spec"]["resources"]["disk_list"]:
+                if hasattr(disk, "data_source_reference"):
+                    if hasattr(disk["data_source_reference"], 'kind') and disk["data_source_reference"]['kind'] == "image":
+                        disk["data_source_reference"]["name"] = ""
+                        disk["data_source_reference"]["uuid"] = ""
+            for nic in substrate["create_spec"]["resources"]["nic_list"]:
+                nic["subnet_reference"]["uuid"] = ""
+                nic["subnet_reference"]["name"] = ""
+        if substrate["type"] == "AZURE_VM":
+            substrate["create_spec"]["resources"]["storage_profile"]["image_details"]["sku"] = ""
+            substrate["create_spec"]["resources"]["storage_profile"]["image_details"]["publisher"] = ""
+            substrate["create_spec"]["resources"]["storage_profile"]["image_details"]["offer"] = ""
+            substrate["create_spec"]["resources"]["storage_profile"]["image_details"]["version"] = ""
+            substrate["create_spec"]["resources"]["storage_profile"]["image_details"]["source_image_id"] = ""
+            substrate["create_spec"]["resources"]["storage_profile"]["image_details"]["source_image_type"] = ""
+            substrate["create_spec"]["resources"]["storage_profile"]["image_details"]["type"] = ""
+            #for disk in substrate["create_spec"]["resources"]["storage_profile"]["data_disk_list"]:
+            #    disk["lun"] = None
+            #    disk["size_in_gb"] = None
+            #    disk["name"] = ""
+            for nic in substrate["create_spec"]["resources"]["nw_profile"]["nic_list"]:
+                nic["nsg_name"] = ""
+                nic["vnet_name"] = ""
+                nic["subnet_id"] = ""
+                nic["nsg_id"] = ""
+                nic["private_ip_info"]["ip_address"] = ""
+                nic["private_ip_info"]["type"] = ""
+                nic["nic_name"] = ""
+                nic["subnet_name"] = ""
+                nic["vnet_id"] = ""
+                nic["type"] = ""
+                nic["public_ip_info"] = None
+            substrate["create_spec"]["resources"]["resource_group"] = ""
+            substrate["create_spec"]["resources"]["hw_profile"]["max_data_disk_count"] = 0
+            substrate["create_spec"]["resources"]["hw_profile"]["vm_size"] = ""
+            substrate["create_spec"]["resources"]["location"] = ""
+            substrate["create_spec"]["resources"]["availability_set_id"] = ""
+            substrate["create_spec"]["resources"]["account_uuid"] = ""
     return bp_spec
 
 ### --------------------------------------------------------------------------------- ###
