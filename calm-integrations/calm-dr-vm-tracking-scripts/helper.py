@@ -5,6 +5,7 @@
 import requests
 import ujson
 import logging
+import json
 
 from aplos.categories.category import Category, CategoryKey
 from aplos.insights.entity_capability import EntityCapability
@@ -18,6 +19,8 @@ from calm.lib.constants import SUBSTRATE
 from calm.lib.model.store.db import create_db_connection
 from calm.lib.model.store.db_session import create_session, set_session_type
 from calm.pkg.common.scramble import init_scramble
+from calm.lib.model.store.db import get_insights_db
+from calm.lib.proto import AbacEntityCapability
 
 log = logging.getLogger('eylog')
 logging.basicConfig(level=logging.INFO,
@@ -25,6 +28,9 @@ logging.basicConfig(level=logging.INFO,
                     datefmt='%H:%M:%S')
 
 init_config()
+LENGTH = 100
+HEADERS = {'content-type': 'application/json', 'Accept': 'application/json'}
+ESXI_HYPERVISOR_TYPE = "ESX"
 
 # This is needed as when we import calm models, Flags needs be initialized
 
@@ -335,3 +341,209 @@ def get_or_create_category(name, value, tenant_uuid):
     category_obj.initialize(name, value, "Created by CALM", None, True)
     category_obj.save()
     return category_obj
+
+
+def get_mh_vm(base_url, auth, uuid):
+    method = 'GET'
+    url = base_url + "/mh_vms/{0}".format(uuid)
+    resp = requests.request(
+            method,
+            url,
+            headers=HEADERS,
+            auth=(auth["username"], auth["password"]),
+            verify=False
+    )
+    if resp.ok:
+        resp_json = resp.json()
+        return resp_json
+    else:
+        raise Exception("Failed to get vm '{}'.".format(uuid))
+
+
+def update_mh_vm(base_url, auth, uuid, payload):
+    method = 'PUT'
+    url = base_url + "/mh_vms/{0}".format(uuid)
+    resp = requests.request(
+            method,
+            url,
+            headers=HEADERS,
+            auth=(auth["username"], auth["password"]),
+            verify=False,
+            data=payload
+    )
+    if resp.ok:
+        resp_json = resp.json()
+        return resp_json
+    else:
+        raise Exception("Failed to update vm '{}'.".format(uuid))
+
+
+def is_category_key_present(base_url, auth, key):
+    method = 'GET'
+    url = base_url + "/categories/{}".format(key)
+    resp = requests.request(
+        method,
+        url,
+        headers=HEADERS,
+        auth=(auth["username"], auth["password"]),
+        verify=False
+    )
+    if resp.ok:
+        return True
+    else:
+        False
+
+
+def create_category_key(base_url, auth, key):
+    method = 'PUT'
+    url = base_url + "/categories/{}".format(key)
+    payload = {
+        "name": key
+    }
+    resp = requests.request(
+        method,
+        url,
+        data=json.dumps(payload),
+        headers=HEADERS,
+        auth=(auth["username"], auth["password"]),
+        verify=False
+    )
+    if resp.ok:
+        return True
+    else:
+        log.info("Failed to create category key '{}'.".format(key))
+        log.info('Status code: {}'.format(resp.status_code))
+        log.info('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
+        raise Exception("Failed to create category key '{}'.".format(key))
+
+
+def create_category_value(base_url, auth, key, value):
+    method = 'PUT'
+    url = base_url + "/categories/{}/{}".format(key, value)
+    payload = {
+        "value": value,
+        "description": ""
+    }
+    resp = requests.request(
+        method,
+        url,
+        data=json.dumps(payload),
+        headers=HEADERS,
+        auth=(auth["username"], auth["password"]),
+        verify=False
+    )
+    if resp.ok:
+        return True
+    else:
+        log.info("Failed to create category value '{}' for key '{}'.".format(value, key))
+        log.info('Status code: {}'.format(resp.status_code))
+        log.info('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
+        raise Exception("Failed to create category value '{}' for key '{}'.".format(value, key))
+
+
+def add_category_to_vm(base_url, auth, vm_uuid, key, value):
+
+    vm_data = get_mh_vm(base_url, auth, vm_uuid)
+    vm_data.pop("status", None)
+
+    vm_data["metadata"]["categories"] =  vm_data["metadata"].get("categories", {})
+    vm_data["metadata"]["categories"][key] = value
+
+    update_mh_vm(base_url, auth, vm_uuid, vm_data)
+
+
+def get_application_uuids(project_name):
+
+    project_handle = ProjectUtil()
+
+    project_proto = project_handle.get_project_by_name(project_name)
+
+    if not project_proto:
+        raise Exception("No project in system with name '{}'".format(project_name))
+    project_uuid = str(project_proto.uuid)
+
+    application_uuid_list = []
+
+    db_handle = get_insights_db()
+    applications = db_handle.fetch_many(AbacEntityCapability,kind="app",project_reference=project_uuid,select=['kind_id', '_created_timestamp_usecs_'])
+    for application in applications:
+        application_uuid_list.append(application[1][0])
+
+    return application_uuid_list
+
+
+def get_recovery_plan_jobs_list(base_url, auth, offset):
+    method = 'POST'
+    url = base_url + "/recovery_plan_jobs/list"
+    payload = {"length": LENGTH, "offset": offset}
+    resp = requests.request(
+            method,
+            url,
+            data=json.dumps(payload),
+            headers=HEADERS,
+            auth=(auth["username"], auth["password"]),
+            verify=False
+    )
+    if resp.ok:
+        resp_json = resp.json()
+        return resp_json["entities"], resp_json["metadata"]["total_matches"]
+    else:
+        log.info("Failed to get recovery plan jobs list.")
+        log.info('Status code: {}'.format(resp.status_code))
+        log.info('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
+        raise Exception("Failed to get recovery plan jobs list.")
+
+def get_recovery_plan_job_execution_status(base_url, auth, job_uuid):
+    method = 'GET'
+    url = base_url + "/recovery_plan_jobs/{0}/execution_status".format(job_uuid)
+    resp = requests.request(
+            method,
+            url,
+            headers=HEADERS,
+            auth=(auth["username"], auth["password"]),
+            verify=False
+    )
+    if resp.ok:
+        resp_json = resp.json()
+        return resp_json
+    else:
+        log.info("Failed to get recovery plan jobs {0} exucution status.".format(job_uuid))
+        log.info('Status code: {}'.format(resp.status_code))
+        log.info('Response: {}'.format(json.dumps(json.loads(resp.content), indent=4)))
+        raise Exception("Failed to get recovery plan jobs {0} exucution status.".format(job_uuid))
+
+
+def get_vm_source_dest_uuid_map(base_url, auth):
+    vm_source_dest_uuid_map = {}
+    recovery_plan_jobs_list = []
+    total_matches = 1
+    offset = 0
+    while offset < total_matches:
+        entities, total_matches = get_recovery_plan_jobs_list(base_url, auth, offset)
+        for entity in entities:
+            if (
+                entity["status"]["resources"]["execution_parameters"]["action_type"] in ["MIGRATE", "FAILOVER"] and
+                (
+                    entity["status"]["execution_status"]["status"] == "COMPLETED" or
+                    entity["status"]["execution_status"]["status"] == "COMPLETED_WITH_WARNING"
+                )
+            ):
+                recovery_plan_jobs_list.append(entity["metadata"]["uuid"])
+        offset += LENGTH
+
+    for recovery_plan_job in recovery_plan_jobs_list:
+        job_execution_status = get_recovery_plan_job_execution_status(dest_base_url, dest_pc_auth, recovery_plan_job)
+        step_execution_status_list = job_execution_status["operation_status"]["step_execution_status_list"]
+        for step_execution_status_src in step_execution_status_list:
+            if step_execution_status_src["operation_type"] == "ENTITY_RECOVERY" :
+                step_uuid = step_execution_status_src["step_uuid"]
+                src_vm_uuid = step_execution_status_src["any_entity_reference_list"][0]["uuid"]
+                for step_execution_status_dest in step_execution_status_list:
+                    if (
+                        step_execution_status_dest["parent_step_uuid"] == step_uuid and
+                        step_execution_status_dest["operation_type"] in ["ENTITY_RESTORATION", "ENTITY_MIGRATION"]
+                    ):
+                        dest_vm_uuid = step_execution_status_dest["any_entity_reference_list"][0]["uuid"]
+                vm_source_dest_uuid_map[src_vm_uuid] = dest_vm_uuid
+
+    return vm_source_dest_uuid_map
