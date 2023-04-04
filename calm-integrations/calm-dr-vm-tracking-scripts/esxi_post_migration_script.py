@@ -9,7 +9,7 @@ from calm.lib.model.substrates.vmware import VcenterSubstrateElement
 from calm.cloud.vmware.vmware import VMware, get_virtual_disk_info, get_network_device_info
 from calm.common.api_helpers.brownfield_helper import get_vcenter_vm
 from helper import change_project, init_contexts, log, get_vm_source_dest_uuid_map, get_mh_vm
-from calm.lib.model.tasks.vmware import VcenterVdiskInfo, VcenterVControllerInfo, VcenterNicInfo
+from calm.lib.model.tasks.vmware import VcenterVdiskInfo, VcenterVControllerInfo, VcenterNicInfo, VcenterFolderInfo
 from pyVmomi import vim
 
 import calm.lib.model as model
@@ -241,7 +241,8 @@ def update_create_spec_object(create_spec, platform_data, vcenter_details):
                                                                 key=pc.get('key', -1)) for pc in
                                                                 platform_data["controllers"]]
 
-    create_spec.folder = platform_data["folder"]
+    # Move everything under existing path
+    create_spec.folder = VcenterFolderInfo(existing_path=platform_data["folder"], new_path="", delete_empty_folder=False)
 
 
 def update_substrate(old_instance_id, new_instance_id, vcenter_details):
