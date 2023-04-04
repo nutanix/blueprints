@@ -257,10 +257,30 @@ def update_substrate(old_instance_id, new_instance_id, vcenter_details):
     new_platform_data = get_vm_platform_data(vcenter_details, new_instance_id)
     current_platform_data.update(new_platform_data)
 
-    # update substrate element
+    # update substrate element, clear all the snapshot info 
     sub_ele.platform_data = json.dumps(new_platform_data)
     update_create_spec_object(sub_ele.spec, new_platform_data, vcenter_details)
+    current_snapshot_ids = sub_ele.snapshot_info
+    sub_ele.snapshot_info = []
     sub_ele.save()
+
+    try:
+        from calm.lib.model.snapshot_group import VcenterSnapshotInfo, VcenterSnapshotGroup
+        for _id in current_snapshot_ids:
+            db_snapshot_info = VcenterSnapshotInfo.fetch_one(snapshot_id=_id, substrate_element_reference=str(sub_ele.uuid))
+            snapshot_info_id = db_snapshot_info.uuid
+            snapshot_group_query = {
+                'substrate_reference': str(sub_ele.replica_group_reference),
+                'action_runlog_reference': str(db_snapshot_info['action_runlog_reference']),
+            }
+            db_snapshot_info.delete()
+            snapshot_group = VcenterSnapshotGroup.fetch_one(**snapshot_group_query)
+            if snapshot_group and snapshot_info_id:
+                snapshot_group.update_snapshot_info_references(snapshot_info_id, "remove")
+                if not snapshot_group.snapshots:
+                    snapshot_group.delete()
+    except Exception:
+        pass
 
     # Get the substrate from substrate element
     log.info("Updating VM substrate for substrate element {}". format(str(sub_ele.uuid)))
@@ -277,7 +297,6 @@ def update_substrate(old_instance_id, new_instance_id, vcenter_details):
                     task.save()
                     break
             break
-    
     substrate.save()
 
     # Get the substrate config from substrate object
@@ -305,6 +324,8 @@ def update_substrate(old_instance_id, new_instance_id, vcenter_details):
             create_spec["resources"]["account_uuid"] = vcenter_details["account_uuid"]
     clone_bp.intent_spec = json.dumps(clone_bp_intent_spec_dict)
     clone_bp.save()
+
+    
 
     # update patch config action
 
