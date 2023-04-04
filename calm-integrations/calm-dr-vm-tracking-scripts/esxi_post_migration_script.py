@@ -75,7 +75,15 @@ def get_vm_path(content, vm_name):
         folder_name = '/' + folder_name
     return folder_name
 
-def get_updated_vm_platform_data(current_platform_data, vcenter_details, new_instance_id):
+def get_vm_platform_data(vcenter_details, new_instance_id):
+    """
+    Function to get platform data of the vm
+    Args:
+        vcenter_details: vcenter_details
+        new_instance_id: new_instance_id
+
+    Returns: vm platform data
+    """
 
     # Get the vcenter vm data
     handler = VMware(vcenter_details['data']['server'], vcenter_details['data']['username'],
@@ -199,9 +207,8 @@ def get_updated_vm_platform_data(current_platform_data, vcenter_details, new_ins
         "controllers": controller_list,
         "folder": folderPath
     }
-    current_platform_data.update(platformData)
 
-    return current_platform_data
+    return platformData
 
 
 def update_create_spec_object(create_spec, platform_data, vcenter_details):
@@ -245,7 +252,8 @@ def update_substrate(old_instance_id, new_instance_id, vcenter_details):
     
     sub_ele = sub_ele[0]
     current_platform_data = json.loads(sub_ele.platform_data)
-    new_platform_data = get_updated_vm_platform_data(deepcopy(current_platform_data), vcenter_details, new_instance_id)
+    new_platform_data = get_vm_platform_data(vcenter_details, new_instance_id)
+    current_platform_data.update(new_platform_data)
 
     # update substrate element
     sub_ele.platform_data = json.dumps(new_platform_data)
