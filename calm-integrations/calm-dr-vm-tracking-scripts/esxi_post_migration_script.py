@@ -6,7 +6,7 @@ import json
 
 from copy import deepcopy
 from calm.lib.model.substrates.vmware import VcenterSubstrateElement
-from calm.cloud import VMware
+from calm.cloud.vmware.vmware import VMware, get_virtual_disk_info, get_network_device_info
 from calm.common.api_helpers.brownfield_helper import get_vcenter_vm
 from helper import change_project, init_contexts, log, get_vm_source_dest_uuid_map, get_mh_vm
 from calm.lib.model.tasks.vmware import VcenterVdiskInfo, VcenterVControllerInfo, VcenterNicInfo
@@ -51,10 +51,33 @@ def get_vcenter_details(account_name):
     return vcenter_details
 
 
+def get_vm_path(content, vm_name):
+    """
+    Function to find the path of virtual machine.
+    Args:
+        content: VMware content object
+        vm_name: virtual machine managed object
+
+    Returns: Folder of virtual machine if exists, else None
+    """
+    folder_name = None
+    folder = vm_name.parent
+    if folder:
+        folder_name = folder.name
+        fp = folder.parent
+        # climb back up the tree to find our path, stop before the root folder
+        while fp is not None and fp.name is not None and fp != content.rootFolder:
+            folder_name = fp.name + '/' + folder_name
+            try:
+                fp = fp.parent
+            except BaseException:
+                break
+        folder_name = '/' + folder_name
+    return folder_name
+
 def get_updated_vm_platform_data(current_platform_data, vcenter_details, new_instance_id):
 
     # Get the vcenter vm data
-    account_uuid = vcenter_details["account_uuid"]
     handler = VMware(vcenter_details['data']['server'], vcenter_details['data']['username'],
                      vcenter_details['data']['password'], vcenter_details['data']['port'])
 
@@ -63,22 +86,25 @@ def get_updated_vm_platform_data(current_platform_data, vcenter_details, new_ins
     except:
         log.info("Couldn't find vm with uuid: {}". format(new_instance_id))
     
-    # Get the vm data from indra
-    vm_data_from_indra = get_vcenter_vm(new_instance_id, account_uuid)
+    folderPath = get_vm_path(handler.si.content, vm)
+
+    # get the device list
+    device_list = vm.config.hardware.device
 
     # Get the host id from host given
     vm_host_uuid = ""
     host_list = handler.get_hosts_list(vcenter_details['data']['datacenter'])
     for _host in host_list:
-        if _host["name"] == vm_data_from_indra["host"]:
+        if _host["name"] == vm.runtime.host.name:
             vm_host_uuid = _host["summary.hardware.uuid"]
             break
-    
+
     # Get the protgroups for finding netname of nics
     pg_list = handler.get_portgroups(vcenter_details['data']['datacenter'], host_id=vm_host_uuid)
     pg_dict = {i["name"]: i["id"] for i in pg_list}
     nic_list = []
-    for dev in vm_data_from_indra["config.hardware.device.network"]:
+    vm_nic_info = get_network_device_info(device_list, handler.si.content)
+    for dev in vm_nic_info:
         nic_list.append(
             {
                 "nic_type": dev["nicType"],
@@ -90,7 +116,7 @@ def get_updated_vm_platform_data(current_platform_data, vcenter_details, new_ins
     # controller_keys_map
     controller_list = []
     controller_keys_map = {"SCSI": [], "IDE": [], "SATA":[]}
-    for i in vm.config.hardware.device:
+    for i in device_list:
         controller_type = ""
         if isinstance(i, vim.vm.device.VirtualLsiLogicSASController):
             controller_type = "VirtualLsiLogicSASController"
@@ -127,36 +153,39 @@ def get_updated_vm_platform_data(current_platform_data, vcenter_details, new_ins
             )
 
     disk_list = []
-    for dev in vm_data_from_indra["config.hardware.device.disk"]:
+    vm_disk_info = get_virtual_disk_info(device_list)
+    for dev in vm_disk_info:
         controller_key = dev.get("controllerKey")
+        disk_type = dev.get("type")
         adapter_type = ""
         for _k, _v in controller_keys_map.items():
             if controller_key in _v:
                 adapter_type = _k
                 break
-
         disk_list.append(
             {
                 "disk_size_mb": dev.get("capacityInBytes")/(1024*1024) if dev.get("capacityInBytes") else -1,
-                "disk_name": dev.get("backing.fileName", ""),
                 "disk_slot": dev.get("unitNumber"),
                 "controller_key": dev.get("controllerKey"),
                 "location": dev.get("backing.datastore.url", ""),
-                "iso_path": "",     #TODO
-                "disk_type": "disk" if dev.get("type") == "VirtualDisk" else "cdrom",
+                "disk_type": "disk" if disk_type == "VirtualDisk" else "cdrom",
                 "adapter_type": adapter_type,
                 "key": dev.get("key"),
                 "disk_mode": dev.get("backing.diskMode"),
             }
         )
+        if disk_type == "VirtualDisk":
+            disk_list[-1]["disk_name"] = dev.get("backing.fileName", ""),
+        else:
+            disk_list[-1]["iso_path"] = dev.get("backing.fileName", ""),
 
     platformData = {
         "instance_uuid": new_instance_id,
-        "instance_name": vm_data_from_indra["name"],
+        "instance_name": vm.name,
         "mob_id": vm._GetMoId(),
         "host": vm_host_uuid,
-        "cluster": vm_data_from_indra["cluster"],
-        "runtime.powerState": vm_data_from_indra["runtime.powerState"],
+        "cluster": vm.runtime.host.parent.name,
+        "runtime.powerState": vm.runtime.powerState,
         "ipAddressList": handler.get_ip_list(vcenter_details['data']['datacenter'], new_instance_id),
         "datastore": [
             {
@@ -167,19 +196,10 @@ def get_updated_vm_platform_data(current_platform_data, vcenter_details, new_ins
         ],
         "nics": nic_list,
         "disks": disk_list,
-        "controllers": controller_list
+        "controllers": controller_list,
+        "folder": folderPath
     }
     current_platform_data.update(platformData)
-
-    # update the disk datastore
-    disk_key_location = {}
-    for _disk in vm_data_from_indra["config.hardware.device.disk"]:
-        if _disk.get("backing.datastore.url"):
-            disk_key_location[_disk["key"]] = _disk.get("backing.datastore.url")
-    
-    for _disk in current_platform_data.get("disks", []):
-        if _disk.get("key") and disk_key_location.get(_disk["key"]):
-            _disk["location"] = disk_key_location[_disk["key"]]
 
     return current_platform_data
 
@@ -214,7 +234,7 @@ def update_create_spec_object(create_spec, platform_data, vcenter_details):
                                                                 key=pc.get('key', -1)) for pc in
                                                                 platform_data["controllers"]]
 
-    create_spec.folder = "?"   #TODO
+    create_spec.folder = platform_data["folder"]
 
 
 def update_substrate(old_instance_id, new_instance_id, vcenter_details):
