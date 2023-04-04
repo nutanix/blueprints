@@ -93,7 +93,7 @@ def get_vm_platform_data(vcenter_details, new_instance_id):
         vm = handler.get_vm_in_dc(vcenter_details['data']['datacenter'], new_instance_id)
     except:
         log.info("Couldn't find vm with uuid: {}". format(new_instance_id))
-    
+
     folderPath = get_vm_path(handler.si.content, vm)
 
     # get the device list
@@ -112,7 +112,7 @@ def get_vm_platform_data(vcenter_details, new_instance_id):
     pg_dict = {i["name"]: i["id"] for i in pg_list}
     nic_list = []
     vm_nic_info = get_network_device_info(device_list, handler.si.content)
-    for dev in vm_nic_info:
+    for _, dev in vm_nic_info.items():
         nic_list.append(
             {
                 "nic_type": dev["nicType"],
@@ -137,8 +137,7 @@ def get_vm_platform_data(vcenter_details, new_instance_id):
         elif isinstance(i, vim.vm.device.VirtualBusLogicController):
             controller_type = "VirtualBusLogicController"
 
-        # Create controller_keys used in calculating disk data
-        # and controller data
+        # Create controller_keys used in calculating disk data and controller data
         if isinstance(i, vim.vm.device.VirtualSCSIController):
             controller_keys_map["SCSI"].append(i.key)
             controller_list.append(
@@ -162,7 +161,7 @@ def get_vm_platform_data(vcenter_details, new_instance_id):
 
     disk_list = []
     vm_disk_info = get_virtual_disk_info(device_list)
-    for dev in vm_disk_info:
+    for _, dev in vm_disk_info.items():
         controller_key = dev.get("controllerKey")
         disk_type = dev.get("type")
         adapter_type = ""
@@ -182,10 +181,13 @@ def get_vm_platform_data(vcenter_details, new_instance_id):
                 "disk_mode": dev.get("backing.diskMode"),
             }
         )
+
         if disk_type == "VirtualDisk":
-            disk_list[-1]["disk_name"] = dev.get("backing.fileName", ""),
+            disk_list[-1]["disk_name"] = dev.get("backing.fileName", "")
         else:
-            disk_list[-1]["iso_path"] = dev.get("backing.fileName", ""),
+            disk_list[-1]["disk_name"] = ""
+            disk_list[-1]["iso_path"] = dev.get("backing.fileName", "")
+            disk_list[-1]["disk_mode"] = "persistent"
 
     platformData = {
         "instance_uuid": new_instance_id,
@@ -207,7 +209,6 @@ def get_vm_platform_data(vcenter_details, new_instance_id):
         "controllers": controller_list,
         "folder": folderPath
     }
-
     return platformData
 
 
