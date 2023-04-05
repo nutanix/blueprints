@@ -18,7 +18,7 @@ from pyVmomi import vim
 import calm.lib.model as model
 
 
-REQUIRED_ATTRS = ['DEST_PC_IP', 'DEST_PC_USER', 'DEST_PC_PASS', 'SOURCE_PROJECT_NAME', 'DEST_ACCOUNT_NAME']
+REQUIRED_ATTRS = ['DEST_PC_IP', 'DEST_PC_USER', 'DEST_PC_PASS', 'SOURCE_PROJECT_NAME', 'DEST_ACCOUNT_NAME', 'DEST_PROJECT_NAME']
 msg = ""
 for attr in REQUIRED_ATTRS:
     if attr not in os.environ:
