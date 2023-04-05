@@ -532,7 +532,7 @@ def get_vm_source_dest_uuid_map(base_url, auth):
         offset += LENGTH
 
     for recovery_plan_job in recovery_plan_jobs_list:
-        job_execution_status = get_recovery_plan_job_execution_status(dest_base_url, dest_pc_auth, recovery_plan_job)
+        job_execution_status = get_recovery_plan_job_execution_status(base_url, auth, recovery_plan_job)
         step_execution_status_list = job_execution_status["operation_status"]["step_execution_status_list"]
         for step_execution_status_src in step_execution_status_list:
             if step_execution_status_src["operation_type"] == "ENTITY_RECOVERY" :

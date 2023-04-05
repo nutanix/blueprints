@@ -3,13 +3,16 @@
 
 import os
 import json
-
 from copy import deepcopy
+
+from calm.common.flags import gflags
+
+from aplos.insights.entity_capability import EntityCapability
 from calm.lib.model.substrates.vmware import VcenterSubstrateElement
 from calm.cloud.vmware.vmware import VMware, get_virtual_disk_info, get_network_device_info
-from calm.common.api_helpers.brownfield_helper import get_vcenter_vm
 from helper import change_project, init_contexts, log, get_vm_source_dest_uuid_map, get_mh_vm
 from calm.lib.model.tasks.vmware import VcenterVdiskInfo, VcenterVControllerInfo, VcenterNicInfo, VcenterFolderInfo
+from calm.lib.model.store.db_session import flush_session
 from pyVmomi import vim
 
 import calm.lib.model as model
@@ -27,6 +30,8 @@ if msg:
 PC_PORT = 9440
 LENGTH = 100
 DR_KEY = "VM_VCENTER_UUID"
+DEST_PROJECT = os.environ['DEST_PROJECT_NAME']
+SRC_PROJECT = os.environ['SOURCE_PROJECT_NAME']
 
 dest_base_url = "https://{}:{}/api/nutanix/v3".format(os.environ['DEST_PC_IP'], str(PC_PORT))
 dest_pc_auth = {"username": os.environ['DEST_PC_USER'], "password": os.environ['DEST_PC_PASS']}
@@ -246,7 +251,7 @@ def update_create_spec_object(create_spec, platform_data, vcenter_details):
     create_spec.folder = VcenterFolderInfo(existing_path=platform_data["folder"], new_path="", delete_empty_folder=False)
 
 
-def update_substrate(old_instance_id, new_instance_id, vcenter_details):
+def update_substrate_info(old_instance_id, new_instance_id, vcenter_details):
 
     sub_ele = VcenterSubstrateElement.query(instance_id=old_instance_id, deleted=False)
     if not sub_ele:
@@ -254,12 +259,11 @@ def update_substrate(old_instance_id, new_instance_id, vcenter_details):
     
     sub_ele = sub_ele[0]
     current_platform_data = json.loads(sub_ele.platform_data)
-    new_platform_data = get_vm_platform_data(vcenter_details, new_instance_id)
-    current_platform_data.update(new_platform_data)
+    current_platform_data.update(get_vm_platform_data(vcenter_details, new_instance_id))
 
     # update substrate element, clear all the snapshot info 
-    sub_ele.platform_data = json.dumps(new_platform_data)
-    update_create_spec_object(sub_ele.spec, new_platform_data, vcenter_details)
+    sub_ele.platform_data = json.dumps(current_platform_data)
+    update_create_spec_object(sub_ele.spec, current_platform_data, vcenter_details)
     current_snapshot_ids = sub_ele.snapshot_info
     sub_ele.snapshot_info = []
     sub_ele.save()
@@ -285,7 +289,7 @@ def update_substrate(old_instance_id, new_instance_id, vcenter_details):
     # Get the substrate from substrate element
     log.info("Updating VM substrate for substrate element {}". format(str(sub_ele.uuid)))
     substrate = sub_ele.replica_group
-    update_create_spec_object(substrate.spec, new_platform_data, vcenter_details)
+    update_create_spec_object(substrate.spec, current_platform_data, vcenter_details)
 
     # update create action
     log.info("Updating 'create_Action' for substrate {}.".format(str(substrate.uuid)))
@@ -302,7 +306,7 @@ def update_substrate(old_instance_id, new_instance_id, vcenter_details):
     # Get the substrate config from substrate object
     log.info("Updating VM substrate config for substrate element {}". format(str(sub_ele.uuid)))
     sub_config = substrate.config
-    update_create_spec_object(sub_config.spec, new_platform_data, vcenter_details)
+    update_create_spec_object(sub_config.spec, current_platform_data, vcenter_details)
     sub_config.save()
 
     # Updating intent spec
@@ -312,29 +316,56 @@ def update_substrate(old_instance_id, new_instance_id, vcenter_details):
     for substrate_cfg in clone_bp_intent_spec_dict.get("resources").get("substrate_definition_list"):
         if substrate_cfg["uuid"] == str(sub_config.uuid):
             create_spec = substrate_cfg["create_spec"]
-            create_spec["datastore"] = new_platform_data["datastore"]["URL"]
-            create_spec["host"] = new_platform_data["host"]
+            create_spec["datastore"] = current_platform_data["datastore"]["URL"]
+            create_spec["host"] = current_platform_data["host"]
             create_spec["template"] = ""
             create_spec["resources"]["template_nic_list"] = ""
             create_spec["resources"]["template_disk_list"] = ""
             create_spec["resources"]["template_controller_list"] = ""
-            create_spec["resources"]["nic_list"] = deepcopy(new_platform_data["nics"])
-            create_spec["resources"]["disk_list"] = deepcopy(new_platform_data["disks"])
-            create_spec["resources"]["controller_list"] = deepcopy(new_platform_data["controllers"])
+            create_spec["resources"]["nic_list"] = deepcopy(current_platform_data["nics"])
+            create_spec["resources"]["disk_list"] = deepcopy(current_platform_data["disks"])
+            create_spec["resources"]["controller_list"] = deepcopy(current_platform_data["controllers"])
             create_spec["resources"]["account_uuid"] = vcenter_details["account_uuid"]
     clone_bp.intent_spec = json.dumps(clone_bp_intent_spec_dict)
     clone_bp.save()
 
-    
+    # TODO update patch config action
+    '''log.info("Updating patch config action for '{}' with instance_id '{}'.".format(current_platform_data["instance_name"], new_instance_id))
+    for patch in application.active_app_profile_instance.patches:
+        patch_config_attr = patch.attrs_list[0]
+        patch_data = patch_config_attr.data
 
-    # update patch config action
+        if patch_config_attr.target == '''
+
+def update_substrates(vm_uuid_map, vcenter_details):
+
+    for older_vcenter_vm_uuid, newer_vcenter_vm_uuid in vm_uuid_map.items():
+
+        # Update substrates using older_vcenter_vm_uuid
+        try:
+            update_substrate_info(older_vcenter_vm_uuid, newer_vcenter_vm_uuid, vcenter_details)
+        except Exception as e:
+            log.info("Failed to udpate substrate of {0}".format(older_vcenter_vm_uuid))
+            log.info(e)
+    flush_session()
 
 
+def update_app_project(vm_uuid_map):
+    app_names = set()
+    app_kind = "app"
 
+    for _, instance_id in vm_uuid_map.keys():
+        NSE = model.NutanixSubstrateElement.query(instance_id=instance_id, deleted=False)
+        if NSE:
+            NSE = NSE[0]
+            app_name = model.AppProfileInstance.get_object(NSE.app_profile_instance_reference).application.name
+            app_uuid = model.AppProfileInstance.get_object(NSE.app_profile_instance_reference).application.uuid
+            entity_cap = EntityCapability(kind_name=app_kind, kind_id=str(app_uuid))
+            if entity_cap.project_name == SRC_PROJECT:
+                app_names.add(app_name)
 
-    
-
-
+    for app_name in app_names:
+        change_project(app_name, DEST_PROJECT)
 
 
 def main():
@@ -345,41 +376,22 @@ def main():
         # Get the account
         vcenter_details= get_vcenter_details(os.environ['DEST_ACCOUNT_NAME'])
 
-        vm_uuid_map = get_vm_source_dest_uuid_map(dest_base_url, dest_pc_auth)
+        pc_vm_uuid_map = get_vm_source_dest_uuid_map(dest_base_url, dest_pc_auth)
         # This will contain pc-vm-uuid(source) to pc-vm-uuid(destination)
 
-        for _, dest_pc_vm_uuid in vm_uuid_map.items():
-            vm_data = get_mh_vm(dest_base_url, dest_pc_auth, dest_pc_vm_uuid)
-            newer_vcenter_vm_uuid = vm_data["status"]["resources"]["hypervisor_specific_id"]
-            older_vcenter_vm_uuid = vm_data["metadata"].get("categories", {}).get(DR_KEY, "")
-            if not older_vcenter_vm_uuid:
+        calm_vm_uuid_map = {}
+        for _, dpc_vm_uuid in pc_vm_uuid_map.items():
+            dest_vm_data = get_mh_vm(dest_base_url, dest_pc_auth, dpc_vm_uuid)
+            old_instance_uuid = dest_vm_data["metadata"].get("categories", {}).get(DR_KEY, "")
+            new_instance_uuid = dest_vm_data["status"]["resources"]["hypervisor_specific_id"]
+            if not (old_instance_uuid or new_instance_uuid):
                 continue
+            calm_vm_uuid_map[old_instance_uuid] = new_instance_uuid
 
-            # Get substrate element using older vcenter vm uuid
-            update_substrate(older_vcenter_vm_uuid, newer_vcenter_vm_uuid, vcenter_details)
+        update_substrates(calm_vm_uuid_map, vcenter_details)
 
-        
-        
-        
-        
-    
+        update_app_project(calm_vm_uuid_map)
 
-
-
-
-
-
-
-
-
-
-
-        Need map for older vcenter-uuid to newer vcenter-uuid
-
-        update_substrates(vm_uuid_map)
-
-
-    
     except Exception as e:
         log.info("Exception: %s" % e)
         raise
