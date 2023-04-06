@@ -9,13 +9,6 @@ from calm.common.flags import gflags
 import calm.lib.model as model
 
 from helper import init_contexts, log, is_category_key_present, create_category_key, create_category_value, add_category_to_vm, get_application_uuids
-preMigration = __import__("post-migration-script")
-
-from calm.lib.model.store.db import get_insights_db
-
-from calm.lib.proto import AbacEntityCapability
-
-from calm.common.project_util import ProjectUtil
 
 
 REQUIRED_ATTRS = ['DEST_PC_IP', 'DEST_PC_USER', 'DEST_PC_PASS', 'SOURCE_PROJECT_NAME', 'SOURCE_PC_IP', 'SOURCE_PC_USER', 'SOURCE_PC_PASSWORD']

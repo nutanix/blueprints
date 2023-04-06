@@ -445,10 +445,14 @@ def add_category_to_vm(base_url, auth, vm_uuid, key, value):
 
     vm_data = get_mh_vm(base_url, auth, vm_uuid)
     vm_data.pop("status", None)
-
+    vm_data["metadata"].pop("categories_mapping", None)
     vm_data["metadata"]["categories"] =  vm_data["metadata"].get("categories", {})
-    vm_data["metadata"]["categories"][key] = value
 
+    if vm_data["metadata"]["categories"].get(key, "") == value:
+        log.info("ignoring vm update of {} as it already have correct key". format(vm_uuid))
+        return
+
+    vm_data["metadata"]["categories"][key] = value
     update_mh_vm(base_url, auth, vm_uuid, vm_data)
 
 
