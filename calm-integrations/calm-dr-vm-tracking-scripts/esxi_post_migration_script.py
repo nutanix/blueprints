@@ -9,10 +9,10 @@ from calm.common.flags import gflags
 
 from aplos.insights.entity_capability import EntityCapability
 from calm.lib.model.substrates.vmware import VcenterSubstrateElement
-from calm.cloud.vmware.vmware import VMware, get_virtual_disk_info, get_network_device_info
 from helper import change_project, init_contexts, log, get_vm_source_dest_uuid_map, get_mh_vm
-from calm.lib.model.tasks.vmware import VcenterVdiskInfo, VcenterVControllerInfo, VcenterNicInfo, VcenterFolderInfo
+from calm.lib.model.tasks.vmware import VcenterVdiskInfo, VcenterVControllerInfo, VcenterNicInfo, VcenterFolderInfo, VcenterTagInfo
 from calm.lib.model.store.db_session import flush_session
+from calm.common.api_helpers.vmware_helper import get_vmware_resources
 from pyVmomi import vim
 
 import calm.lib.model as model
@@ -90,131 +90,12 @@ def get_vm_platform_data(vcenter_details, new_instance_id):
     Returns: vm platform data
     """
 
-    # Get the vcenter vm data
-    handler = VMware(vcenter_details['data']['server'], vcenter_details['data']['username'],
-                     vcenter_details['data']['password'], vcenter_details['data']['port'])
-
-    try:
-        vm = handler.get_vm_in_dc(vcenter_details['data']['datacenter'], new_instance_id)
-    except:
-        log.info("Couldn't find vm with uuid: {}". format(new_instance_id))
-
-    folderPath = get_vm_path(handler.si.content, vm)
-
-    # get the device list
-    device_list = vm.config.hardware.device
-
-    # Get the host id from host given
-    vm_host_uuid = ""
-    host_list = handler.get_hosts_list(vcenter_details['data']['datacenter'])
-    for _host in host_list:
-        if _host["name"] == vm.runtime.host.name:
-            vm_host_uuid = _host["summary.hardware.uuid"]
-            break
-
-    # Get the protgroups for finding netname of nics
-    pg_list = handler.get_portgroups(vcenter_details['data']['datacenter'], host_id=vm_host_uuid)
-    pg_dict = {i["name"]: i["id"] for i in pg_list}
-    nic_list = []
-    vm_nic_info = get_network_device_info(device_list, handler.si.content)
-    for _, dev in vm_nic_info.items():
-        nic_list.append(
-            {
-                "nic_type": dev["nicType"],
-                "key": dev["key"],
-                "net_name": pg_dict[dev["backing.network.name"]]
-            }
-        )
-
-    # controller_keys_map
-    controller_list = []
-    controller_keys_map = {"SCSI": [], "IDE": [], "SATA":[]}
-    for i in device_list:
-        controller_type = ""
-        if isinstance(i, vim.vm.device.VirtualLsiLogicSASController):
-            controller_type = "VirtualLsiLogicSASController"
-        elif isinstance(i, vim.vm.device.VirtualLsiLogicController):
-            controller_type = "VirtualLsiLogicController"
-        elif isinstance(i, vim.vm.device.ParaVirtualSCSIController):
-            controller_type = "ParaVirtualSCSIController"
-        elif isinstance(i, vim.vm.device.VirtualAHCIController):
-            controller_type = "VirtualAHCIController"
-        elif isinstance(i, vim.vm.device.VirtualBusLogicController):
-            controller_type = "VirtualBusLogicController"
-
-        # Create controller_keys used in calculating disk data and controller data
-        if isinstance(i, vim.vm.device.VirtualSCSIController):
-            controller_keys_map["SCSI"].append(i.key)
-            controller_list.append(
-                {
-                    "controller_type": controller_type,
-                    "key": i.key,
-                    "bus_sharing": i.sharedBus
-                }
-            )
-        elif isinstance(i, vim.vm.device.VirtualIDEController):
-            controller_keys_map["IDE"].append(i.key)
-        elif isinstance(i, vim.vm.device.VirtualSATAController):
-            controller_keys_map["SATA"].append(i.key)
-            controller_list.append(
-                {
-                    "controller_type": controller_type,
-                    "key": i.key,
-                    "bus_sharing": ""
-                }
-            )
-
-    disk_list = []
-    vm_disk_info = get_virtual_disk_info(device_list)
-    for _, dev in vm_disk_info.items():
-        controller_key = dev.get("controllerKey")
-        disk_type = dev.get("type")
-        adapter_type = ""
-        for _k, _v in controller_keys_map.items():
-            if controller_key in _v:
-                adapter_type = _k
-                break
-        disk_list.append(
-            {
-                "disk_size_mb": dev.get("capacityInBytes")/(1024*1024) if dev.get("capacityInBytes") else -1,
-                "disk_slot": dev.get("unitNumber"),
-                "controller_key": dev.get("controllerKey"),
-                "location": dev.get("backing.datastore.url", ""),
-                "disk_type": "disk" if disk_type == "VirtualDisk" else "cdrom",
-                "adapter_type": adapter_type,
-                "key": dev.get("key"),
-                "disk_mode": dev.get("backing.diskMode"),
-            }
-        )
-
-        if disk_type == "VirtualDisk":
-            disk_list[-1]["disk_name"] = dev.get("backing.fileName", "")
-        else:
-            disk_list[-1]["disk_name"] = ""
-            disk_list[-1]["iso_path"] = dev.get("backing.fileName", "")
-            disk_list[-1]["disk_mode"] = "persistent"
-
-    platformData = {
-        "instance_uuid": new_instance_id,
-        "instance_name": vm.name,
-        "mob_id": vm._GetMoId(),
-        "host": vm_host_uuid,
-        "cluster": vm.runtime.host.parent.name,
-        "runtime.powerState": vm.runtime.powerState,
-        "ipAddressList": handler.get_ip_list(vcenter_details['data']['datacenter'], new_instance_id),
-        "datastore": [
-            {
-                "Name": vm.datastore[0].name,
-                "URL": vm.datastore[0].summary.url,
-                "FreeSpace": vm.datastore[0].summary.freeSpace
-            }
-        ],
-        "nics": nic_list,
-        "disks": disk_list,
-        "controllers": controller_list,
-        "folder": folderPath
+    filters = {
+        "uuid": new_instance_id,
+        "account_uuid": vcenter_details["account_uuid"]
     }
-    return platformData
+    platform_data = get_vmware_resources('vm_detail', filters)
+    return platform_data
 
 
 def update_create_spec_object(create_spec, platform_data, vcenter_details):
@@ -222,6 +103,7 @@ def update_create_spec_object(create_spec, platform_data, vcenter_details):
     create_spec.resources.account_uuid = vcenter_details["account_uuid"]
     create_spec.datastore = platform_data["datastore"]["URL"]
     create_spec.host = platform_data["host"]
+    create_spec.cluster = platform_data["cluster"]
     create_spec.template = ""
     create_spec.resources.template_nic_list = []
     create_spec.resources.template_disk_list = []
@@ -249,6 +131,9 @@ def update_create_spec_object(create_spec, platform_data, vcenter_details):
 
     # Move everything under existing path
     create_spec.folder = VcenterFolderInfo(existing_path=platform_data["folder"], new_path="", delete_empty_folder=False)
+
+    # Adding tags
+    create_spec.resources.tag_list = [VcenterTagInfo(tag_id=_tag) for _tag in platform_data.get("tags", [])]
 
 
 def update_substrate_info(old_instance_id, new_instance_id, vcenter_details):
