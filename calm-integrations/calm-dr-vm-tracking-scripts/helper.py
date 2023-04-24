@@ -357,6 +357,7 @@ def get_mh_vm(base_url, auth, uuid):
         resp_json = resp.json()
         return resp_json
     else:
+        log.info(resp.content)
         raise Exception("Failed to get vm '{}'.".format(uuid))
 
 
@@ -369,12 +370,13 @@ def update_mh_vm(base_url, auth, uuid, payload):
             headers=HEADERS,
             auth=(auth["username"], auth["password"]),
             verify=False,
-            data=payload
+            data=json.dumps(payload)
     )
     if resp.ok:
         resp_json = resp.json()
         return resp_json
     else:
+        log.info(resp.content)
         raise Exception("Failed to update vm '{}'.".format(uuid))
 
 
