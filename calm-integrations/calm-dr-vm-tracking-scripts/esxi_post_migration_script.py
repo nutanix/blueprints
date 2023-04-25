@@ -9,7 +9,7 @@ from calm.common.flags import gflags
 
 from aplos.insights.entity_capability import EntityCapability
 from calm.lib.model.substrates.vmware import VcenterSubstrateElement
-from helper import change_project, init_contexts, log, get_vm_source_dest_uuid_map, get_mh_vm
+from helper import change_project_of_vmware_dr_apps, init_contexts, log, get_vm_source_dest_uuid_map, get_mh_vm
 from calm.lib.model.tasks.vmware import VcenterVdiskInfo, VcenterVControllerInfo, VcenterNicInfo, VcenterFolderInfo, VcenterTagInfo
 from calm.lib.model.store.db_session import flush_session
 from calm.common.api_helpers.vmware_helper import get_vmware_resources
@@ -101,7 +101,7 @@ def get_vm_platform_data(vcenter_details, new_instance_id):
 def update_create_spec_object(create_spec, platform_data, vcenter_details):
 
     create_spec.resources.account_uuid = vcenter_details["account_uuid"]
-    create_spec.datastore = platform_data["datastore"]["URL"]
+    create_spec.datastore = platform_data["datastore"][0]["URL"]
     create_spec.host = platform_data["host"]
     create_spec.cluster = platform_data["cluster"]
     create_spec.template = ""
@@ -144,10 +144,12 @@ def update_substrate_info(old_instance_id, new_instance_id, vcenter_details):
     
     sub_ele = sub_ele[0]
     current_platform_data = json.loads(sub_ele.platform_data)
-    current_platform_data.update(get_vm_platform_data(vcenter_details, new_instance_id))
+    new_platform_data = json.loads(get_vm_platform_data(vcenter_details, new_instance_id)[0])
+    current_platform_data.update(new_platform_data)
 
     # update substrate element, clear all the snapshot info 
     sub_ele.platform_data = json.dumps(current_platform_data)
+    sub_ele.instance_id = new_instance_id
     update_create_spec_object(sub_ele.spec, current_platform_data, vcenter_details)
     current_snapshot_ids = sub_ele.snapshot_info
     sub_ele.snapshot_info = []
@@ -182,7 +184,7 @@ def update_substrate_info(old_instance_id, new_instance_id, vcenter_details):
         if action.name == "action_create":
             for task in action.runbook.get_all_tasks():
                 if task.type == "PROVISION_VCENTER":
-                    update_create_spec_object(task.attrs)
+                    update_create_spec_object(task.attrs, current_platform_data, vcenter_details)
                     task.save()
                     break
             break
@@ -201,7 +203,7 @@ def update_substrate_info(old_instance_id, new_instance_id, vcenter_details):
     for substrate_cfg in clone_bp_intent_spec_dict.get("resources").get("substrate_definition_list"):
         if substrate_cfg["uuid"] == str(sub_config.uuid):
             create_spec = substrate_cfg["create_spec"]
-            create_spec["datastore"] = current_platform_data["datastore"]["URL"]
+            create_spec["datastore"] = current_platform_data["datastore"][0]["URL"]
             create_spec["host"] = current_platform_data["host"]
             create_spec["template"] = ""
             create_spec["resources"]["template_nic_list"] = ""
@@ -239,8 +241,8 @@ def update_app_project(vm_uuid_map):
     app_names = set()
     app_kind = "app"
 
-    for _, instance_id in vm_uuid_map.keys():
-        NSE = model.NutanixSubstrateElement.query(instance_id=instance_id, deleted=False)
+    for _, instance_id in vm_uuid_map.items():
+        NSE = VcenterSubstrateElement.query(instance_id=instance_id, deleted=False)
         if NSE:
             NSE = NSE[0]
             app_name = model.AppProfileInstance.get_object(NSE.app_profile_instance_reference).application.name
@@ -250,7 +252,7 @@ def update_app_project(vm_uuid_map):
                 app_names.add(app_name)
 
     for app_name in app_names:
-        change_project(app_name, DEST_PROJECT)
+        change_project_of_vmware_dr_apps(app_name, DEST_PROJECT)
 
 
 def main():

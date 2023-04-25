@@ -184,6 +184,44 @@ def change_project(application_name, new_project_name):
     log.info("Successfully moved '{}' application to  '{}' project ".format(app_name, new_project_name))
 
 
+def change_project_of_vmware_dr_apps(application_name, new_project_name):
+    """
+    change_project method for the vmware dr apps
+    Raises:
+        Exception: when command line args are not exepcted
+    Returns:
+        None
+    """
+
+    tenant_uuid = TenantUtils.get_logged_in_tenant()
+    project_handle = ProjectUtil()
+    app_name = application_name
+    new_project_name = new_project_name
+
+    # Verify if supplied project name is valid
+    project_proto = project_handle.get_project_by_name(new_project_name)
+    if not project_proto:
+        raise Exception("No project in system with name '{}'".format(new_project_name))
+    new_project_uuid = str(project_proto.uuid)
+
+    # Verify if supplied application name is valid
+    apps = Application.query(name=app_name, deleted=False)
+    if not apps:
+        raise Exception("No app in system with name '{}'".format(app_name))
+    app = apps[0]
+
+    entity_cap = EntityCapability(kind_name="app", kind_id=str(app.uuid))
+
+    if entity_cap.project_name == new_project_name:
+        log.info("Application '{}' is already in same project : '{}'".format(app_name, new_project_name))
+        return
+    
+    log.info("Moving '{}' application to new  project : '{}'".format(app_name, new_project_name))
+    handle_entity_project_change("app", str(app.uuid), tenant_uuid, new_project_name, new_project_uuid)
+    log.info("Successfully changed '{}' application's ownership to new project '{}'".format(app_name, new_project_name))
+    log.info("**" * 30)
+
+
 def change_project_vmware(application_name, new_project_name):
     """
     change_project method for the file
