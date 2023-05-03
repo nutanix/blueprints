@@ -13,7 +13,6 @@ from helper import change_project_of_vmware_dr_apps, init_contexts, log, get_vm_
 from calm.lib.model.tasks.vmware import VcenterVdiskInfo, VcenterVControllerInfo, VcenterNicInfo, VcenterFolderInfo, VcenterTagInfo
 from calm.lib.model.store.db_session import flush_session
 from calm.common.api_helpers.vmware_helper import get_vmware_resources
-from pyVmomi import vim
 
 import calm.lib.model as model
 
@@ -32,6 +31,8 @@ LENGTH = 100
 DR_KEY = "VM_VCENTER_UUID"
 DEST_PROJECT = os.environ['DEST_PROJECT_NAME']
 SRC_PROJECT = os.environ['SOURCE_PROJECT_NAME']
+TEMPLATE_NAME = os.environ['TEMPLATE_NAME']
+_TEMPLATE_UUID = ""
 
 dest_base_url = "https://{}:{}/api/nutanix/v3".format(os.environ['DEST_PC_IP'], str(PC_PORT))
 dest_pc_auth = {"username": os.environ['DEST_PC_USER'], "password": os.environ['DEST_PC_PASS']}
@@ -39,7 +40,6 @@ dest_pc_auth = {"username": os.environ['DEST_PC_USER'], "password": os.environ['
 
 
 def get_vcenter_details(account_name):
-
     vcenter_details = {}
     account = model.Account.query(name=account_name)
     if account:
@@ -52,8 +52,19 @@ def get_vcenter_details(account_name):
         vcenter_details["account_uuid"] = str(account.uuid)
     else:
         raise Exception("Could not find sepecified account {}".format(account_name))
-
     return vcenter_details
+
+
+def get_template_id(vcenter_details):
+    global _TEMPLATE_UUID
+    if not _TEMPLATE_UUID:
+        tmp_data = get_vmware_resources('template', {"account_uuid": vcenter_details["account_uuid"]})
+        tmp_list = json.loads(tmp_data[0])
+        tmp_map = {
+            _t["name"]: _t["config.instanceUuid"] for _t in tmp_list
+        }
+        _TEMPLATE_UUID = tmp_map.get("TEMPLATE_NAME")
+    return _TEMPLATE_UUID
 
 
 def get_vm_path(content, vm_name):
@@ -104,10 +115,18 @@ def update_create_spec_object(create_spec, platform_data, vcenter_details):
     create_spec.datastore = platform_data["datastore"][0]["URL"]
     create_spec.host = platform_data["host"]
     create_spec.cluster = platform_data["cluster"]
-    create_spec.template = ""
+    """create_spec.template = ""
     create_spec.resources.template_nic_list = []
     create_spec.resources.template_disk_list = []
-    create_spec.resources.template_controller_list = []
+    create_spec.resources.template_controller_list = []"""
+
+    create_spec.template = get_template_id(vcenter_details)
+    for _i in create_spec.resources.template_nic_list:
+        _i.is_deleted = True
+    for _i in create_spec.resources.template_disk_list:
+        _i.is_deleted = True
+    for _i in create_spec.resources.template_controller_list:
+        _i.is_deleted = True
 
     # Treat all nics as normal nics
     create_spec.resources.nic_list = [VcenterNicInfo(net_name=pn.get('net_name', ''), nic_type=pn.get('nic_type', None))
@@ -200,18 +219,34 @@ def update_substrate_info(old_instance_id, new_instance_id, vcenter_details):
     application = model.AppProfileInstance.get_object(sub_ele.app_profile_instance_reference).application
     clone_bp = application.app_blueprint_config
     clone_bp_intent_spec_dict = json.loads(clone_bp.intent_spec)
+    for _nic in current_platform_data["nics"]:
+        _nic.pop("key", None)
+    for _disk in current_platform_data["disks"]:
+        _disk["device_slot"] = _disk.pop("disk_slot", -1)
+        _disk.pop("key", None)
+        _disk.pop("disk_name", None)
     for substrate_cfg in clone_bp_intent_spec_dict.get("resources").get("substrate_definition_list"):
         if substrate_cfg["uuid"] == str(sub_config.uuid):
             create_spec = substrate_cfg["create_spec"]
             create_spec["datastore"] = current_platform_data["datastore"][0]["URL"]
             create_spec["host"] = current_platform_data["host"]
-            create_spec["template"] = ""
-            create_spec["resources"]["template_nic_list"] = ""
-            create_spec["resources"]["template_disk_list"] = ""
-            create_spec["resources"]["template_controller_list"] = ""
-            create_spec["resources"]["nic_list"] = deepcopy(current_platform_data["nics"])
-            create_spec["resources"]["disk_list"] = deepcopy(current_platform_data["disks"])
-            create_spec["resources"]["controller_list"] = deepcopy(current_platform_data["controllers"])
+
+            # NOTE: For now, we are template data, Just setting every attribute as deleted
+            """create_spec["template"] = ""
+            create_spec["resources"]["template_nic_list"] = []
+            create_spec["resources"]["template_disk_list"] = []
+            create_spec["resources"]["template_controller_list"] = []"""
+
+            create_spec["template"] = get_template_id(vcenter_details)
+            for _tnic in create_spec["resources"]["template_nic_list"]:
+                _tnic["is_deleted"] = True
+            for _tdisk in create_spec["resources"]["template_disk_list"]:
+                _tdisk["is_deleted"] = True
+            for _tcontroller in create_spec["resources"]["template_controller_list"]:
+                _tcontroller["is_deleted"] = True
+            create_spec["resources"]["nic_list"] = current_platform_data["nics"]
+            create_spec["resources"]["disk_list"] = current_platform_data["disks"]
+            create_spec["resources"]["controller_list"] = current_platform_data["controllers"]
             create_spec["resources"]["account_uuid"] = vcenter_details["account_uuid"]
     clone_bp.intent_spec = json.dumps(clone_bp_intent_spec_dict)
     clone_bp.save()
@@ -285,4 +320,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
