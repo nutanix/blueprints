@@ -133,9 +133,9 @@ def change_project(application_name, new_project_name):
     log.info("Now moving '{}' app's VM to new project '{}'".format(app_name, new_project_name))
 
     if app.app_blueprint_config.source_marketplace_name:
-        log.info("Moving Markeplace BP of application '{}' to '{}' project".format(app_name, new_project_name))
+        log.info("Moving Marketplace BP of application '{}' to '{}' project".format(app_name, new_project_name))
         handle_entity_project_change("blueprint", str(app.app_blueprint_config.uuid), tenant_uuid, new_project_name, new_project_uuid)
-        log.info("Successfully moved Markeplace BP of application '{}' to '{}' project".format(app_name, new_project_name))
+        log.info("Successfully moved Marketplace BP of application '{}' to '{}' project".format(app_name, new_project_name))
 
     if not pc_account_uuid_object_map:
         log.info("There are no AHV vm's in the app, hence no vm belonging to this app needs any change")
