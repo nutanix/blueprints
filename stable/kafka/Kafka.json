@@ -7468,7 +7468,7 @@
                             "data_type": "BASE",
                             "message_list": [],
                             "uuid": "9b42de57-13a2-48d5-b238-f1a9b82e246c",
-                            "value": "https://downloads.apache.org/kafka/2.6.2/kafka_2.13-2.6.2.tgz",
+                            "value": "https://downloads.apache.org/kafka/3.3.1/kafka_2.13-3.3.1.tgz",
                             "label": "",
                             "state": "ACTIVE",
                             "attrs": {
@@ -10142,7 +10142,7 @@
                             "data_type": "BASE",
                             "message_list": [],
                             "uuid": "bd7792c7-2418-4e57-9633-a59c86a4d5ba",
-                            "value": "https://downloads.apache.org/kafka/2.6.2/kafka_2.13-2.6.2.tgz",
+                            "value": "https://downloads.apache.org/kafka/3.3.1/kafka_2.13-3.3.1.tgz",
                             "label": "",
                             "state": "ACTIVE",
                             "attrs": {
@@ -12816,7 +12816,7 @@
                             "data_type": "BASE",
                             "message_list": [],
                             "uuid": "93af020a-ec6d-4ef3-9597-6ef82faba809",
-                            "value": "https://downloads.apache.org/kafka/2.6.2/kafka_2.13-2.6.2.tgz",
+                            "value": "https://downloads.apache.org/kafka/3.3.1/kafka_2.13-3.3.1.tgz",
                             "label": "",
                             "state": "ACTIVE",
                             "attrs": {
@@ -15490,7 +15490,7 @@
                             "data_type": "BASE",
                             "message_list": [],
                             "uuid": "a10cb15f-80fa-4149-b27a-2721d6fbd060",
-                            "value": "https://downloads.apache.org/kafka/2.6.2/kafka_2.13-2.6.2.tgz",
+                            "value": "https://downloads.apache.org/kafka/3.3.1/kafka_2.13-3.3.1.tgz",
                             "label": "",
                             "state": "ACTIVE",
                             "attrs": {
@@ -18296,7 +18296,7 @@
                             "data_type": "BASE",
                             "message_list": [],
                             "uuid": "1abbe718-e556-49b8-aa49-4f86fbcbecf5",
-                            "value": "https://downloads.apache.org/kafka/2.6.2/kafka_2.13-2.6.2.tgz",
+                            "value": "https://downloads.apache.org/kafka/3.3.1/kafka_2.13-3.3.1.tgz",
                             "label": "",
                             "state": "ACTIVE",
                             "attrs": {
@@ -26655,7 +26655,7 @@
                             "data_type": "BASE",
                             "type": "LOCAL",
                             "name": "KAFKA_URL",
-                            "value": "https://downloads.apache.org/kafka/2.6.2/kafka_2.13-2.6.2.tgz",
+                            "value": "https://downloads.apache.org/kafka/3.3.1/kafka_2.13-3.3.1.tgz",
                             "label": "",
                             "attrs": {
                                 "type": ""
@@ -26759,7 +26759,7 @@
                             "data_type": "BASE",
                             "type": "LOCAL",
                             "name": "KAFKA_URL",
-                            "value": "https://downloads.apache.org/kafka/2.6.2/kafka_2.13-2.6.2.tgz",
+                            "value": "https://downloads.apache.org/kafka/3.3.1/kafka_2.13-3.3.1.tgz",
                             "label": "",
                             "attrs": {
                                 "type": ""
@@ -26863,7 +26863,7 @@
                             "data_type": "BASE",
                             "type": "LOCAL",
                             "name": "KAFKA_URL",
-                            "value": "https://downloads.apache.org/kafka/2.6.2/kafka_2.13-2.6.2.tgz",
+                            "value": "https://downloads.apache.org/kafka/3.3.1/kafka_2.13-3.3.1.tgz",
                             "label": "",
                             "attrs": {
                                 "type": ""
@@ -26967,7 +26967,7 @@
                             "data_type": "BASE",
                             "type": "LOCAL",
                             "name": "KAFKA_URL",
-                            "value": "https://downloads.apache.org/kafka/2.6.2/kafka_2.13-2.6.2.tgz",
+                            "value": "https://downloads.apache.org/kafka/3.3.1/kafka_2.13-3.3.1.tgz",
                             "label": "",
                             "attrs": {
                                 "type": ""
@@ -27071,7 +27071,7 @@
                             "data_type": "BASE",
                             "type": "LOCAL",
                             "name": "KAFKA_URL",
-                            "value": "https://downloads.apache.org/kafka/2.6.2/kafka_2.13-2.6.2.tgz",
+                            "value": "https://downloads.apache.org/kafka/3.3.1/kafka_2.13-3.3.1.tgz",
                             "label": "",
                             "attrs": {
                                 "type": ""
